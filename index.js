@@ -10,8 +10,9 @@ module.exports = () => {
   .description('list Studio objects')
   .option('-a, --acct <acct sid>', 'Twilio account sid')
   .option('-A, --auth <auth token>', 'Twilio auth token')
-  .option('-t, --type <step, workflow, etc>', 'the type of Twilio object')
-  .option('-w, --flow <flowSid>', 'a TR workflow SID')
+  .option('-t, --type <workflow, execution, step, etc>', 'the type of Studio object')
+  .option('-f, --flow <flowSid>', 'a Studio workflow SID')
+  .option('-s, --sid <object sid>', 'the SID of the object to get')
   .action(function (args) {
     require('./cmds/list')(args);
   });
@@ -21,8 +22,8 @@ module.exports = () => {
   .description('get one stepRouter object')
   .option('-a, --acct <acct sid>', 'Twilio account sid')
   .option('-A, --auth <auth token>', 'Twilio auth token')
-  .option('-t, --type <workflow, step, etc>', 'the type of Twilio object')
-  .option('-w, --flow <flowSid>', 'a TR workflow SID')
+  .option('-t, --type <workflow, execution, step, etc>', 'the type of Studio object')
+  .option('-f, --flow <flowSid>', 'a Studio workflow SID')
   .option('-s, --sid <object sid>', 'the SID of the object to get')
   .action(function (args) {
     require('./cmds/get')(args);
