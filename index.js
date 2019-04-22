@@ -11,8 +11,10 @@ module.exports = () => {
   .option('-a, --acct <acct sid>', 'Twilio account sid')
   .option('-A, --auth <auth token>', 'Twilio auth token')
   .option('-t, --type <workflow, execution, step, etc>', 'the type of Studio object')
-  .option('-f, --flow <flowSid>', 'a Studio workflow SID')
-  .option('-s, --sid <object sid>', 'the SID of the object to get')
+  .option('-f, --flow [flowSid]', 'a Studio workflow SID')
+  .option('-s, --sid [object sid]', 'the SID of the object to get')
+  .option('-F, --fromDt [from date]', 'the dateFrom as yyyy-mm-ddThh:mm:ss-hh:mm')
+  .option('-T, --toDt [to date]', 'the dateTo as yyyy-mm-ddThh:mm:ss-hh:mm')
   .action(function (args) {
     require('./cmds/list')(args);
   });

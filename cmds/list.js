@@ -6,26 +6,27 @@ const error = require('../src/error');
 var helpers = require('@jlafer/twilio-helpers');
 
 module.exports = (args) => {
-  const {acct, auth, type, flow, sid} = args;
-  let listFn, logFn;
+  const {acct, auth, type, flow, sid, fromDt, toDt} = args;
+  let promise, logFn;
+
+  const spinner = ora().start();
+  const client = require('twilio')(acct, auth);
 
   switch (type) {
     case 'workflow':
-      listFn = helpers.getWorkflows;
+      promise = helpers.getWorkflows(client);
       logFn = helpers.logWorkflow;
       break;
     case 'execution':
-      listFn = helpers.getExecutions;
+      promise = helpers.getExecutions(client, flow, fromDt, toDt);
       logFn = helpers.logExecution;
       break;
     case 'step':
-      listFn = helpers.getSteps;
+      promise = helpers.getSteps(client, flow, sid);
       logFn = helpers.logStep;
       break;
   }
-  const spinner = ora().start();
-  const client = require('twilio')(acct, auth);
-  listFn(client, flow, sid)
+  promise
   .then((objs) => {
     spinner.stop();
     objs.forEach(logFn)
