@@ -1,6 +1,14 @@
 {
   "fields":[
-    {"name":"result","path":["context", "widgets","sayWelcome","FlowEvent"]},
-    {"name":"direction","path":["context", "widgets","menuMain","Direction"]}
+    {
+      "name":"result",
+      "filters":[
+        {"type":"name", "value":"sayWelcome"}
+      ],
+      "data":["context","widgets","sayWelcome","CallStatus"],
+      "map":"identity",
+      "agg":"last",
+      "default":""
+    }
   ]
 }
