@@ -1,0 +1,6 @@
+{
+  "fields":[
+    {"name":"result","path":["context", "widgets","sayWelcome","FlowEvent"]},
+    {"name":"direction","path":["context", "widgets","menuMain","Direction"]}
+  ]
+}

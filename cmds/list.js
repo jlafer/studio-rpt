@@ -1,12 +1,12 @@
 /*
-  This module supports the 'list' command of the 'trcli' CLI program.
+  This module supports the 'list' command of the 'studiorpt' CLI program.
 */
 const ora = require('ora');
 const error = require('../src/error');
 var helpers = require('@jlafer/twilio-helpers');
 
 module.exports = (args) => {
-  const {acct, auth, type, flow, sid, fromDt, toDt} = args;
+  const {acct, auth, type, flowSid, sid, fromDt, toDt} = args;
   let promise, logFn;
 
   const spinner = ora().start();
@@ -18,11 +18,11 @@ module.exports = (args) => {
       logFn = helpers.logWorkflow;
       break;
     case 'execution':
-      promise = helpers.getExecutions(client, flow, fromDt, toDt);
+      promise = helpers.getExecutions(client, flowSid, fromDt, toDt);
       logFn = helpers.logExecution;
       break;
     case 'step':
-      promise = helpers.getSteps(client, flow, sid);
+      promise = helpers.getSteps(client, flowSid, sid);
       logFn = helpers.logStep;
       break;
   }
