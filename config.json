@@ -1,11 +1,13 @@
 {
   "fields":[
     {
-      "name":"result",
-      "filters":[
-        {"type":"name", "value":"sayWelcome"}
-      ],
-      "data":["context","widgets","sayWelcome","CallStatus"],
+      "name":"centerStatus",
+      "filters":{
+        "widget":{
+          "name":"splitCenterState"
+        }
+      },
+      "data":["context","widgets","getCenterState","body"],
       "map":"identity",
       "agg":"last",
       "default":""

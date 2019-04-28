@@ -7,8 +7,6 @@ const helpers = require('@jlafer/twilio-helpers');
 const {readJsonFile} = require('jlafer-node-util');
 const R = require('ramda');
 
-//R.path(field.path, context)
-
 const passesFilter = (stepAndContext, filter) => {
   const {step, context: stepContext} = stepAndContext;
   switch (filter.type) {
@@ -25,14 +23,49 @@ const passesFilter = (stepAndContext, filter) => {
   }
 };
 
+const appendItem = R.curry((list, item) => [...list, item]);
+
+// getWidgetPath :: stepAndContext -> [path]
+const getWidgetPath = R.pipe(
+  R.path(['step', 'transitionedFrom']),
+  appendItem(['context', 'widgets'])
+);
+
+const getWidgetDataFromContext = (path, stepContext) => {
+  console.log(`getWidgetDataFromContext: path:`, path);
+  console.log(`getWidgetDataFromContext: stepContext:`, stepContext);
+  return R.pathOr({}, path, stepContext);
+}
+
+
+// getWidgetVariableData :: stepAndContext -> widgetData
+const getWidgetVariableData = R.converge(
+  getWidgetDataFromContext,
+  [getWidgetPath, R.prop('context')]
+);
+
 const stepFilter = R.curry((filters, stepAndContext) => {
-  for (let filter of filters) {
-    if (! passesFilter(stepAndContext, filter))
-      return false;
-  }
-  console.log(`stepFilter: passed ${stepAndContext.step.sid}`)
-  return true;
+  console.log('stepFilter: for step:', stepAndContext.step);
+  console.log('stepFilter: for context:', stepAndContext.context);
+  const widgetVarData = getWidgetVariableData(stepAndContext);
+  console.log('stepFilter: widgetVarData:', widgetVarData);
+  const step = stepAndContext.step;
+  const widgetData = {...widgetVarData,
+    name: step.transitionedFrom,
+    event: step.name};
+  const widgetFilters = R.prop('widget', filters);
+  console.log('stepFilter: widgetFilters:', widgetFilters);
+  const passes = R.whereEq(widgetFilters, widgetData);
+  console.log('stepFilter: passes:', passes);
+  return passes;
 });
+
+// stepFilterFnal :: filters -> stepAndContext -> boolean
+const stepFilterFnal = R.useWith(
+  R.whereEq,
+  R.prop('widget'),
+  getWidgetVariableData
+);
 
 const dataGetter = R.curry((dataSpec, stepAndContext) => {
   const {step, context: stepContext} = stepAndContext;
@@ -82,6 +115,7 @@ const valueAggregator = R.curry((agg, accum, value) => {
 });
 
 const calculateValue = R.curry((steps, field) => {
+  console.log('calculateValue: for field:', field);
   const value = steps.filter(stepFilter(field.filters))
   .map(dataGetter(field.data))
   .map(dataToValueMapper(field.map))
@@ -101,7 +135,7 @@ const reportExecution = R.curry( async (client, flow, cfg, execAndContext) => {
   const {execution, context} = execAndContext;
   const {sid, accountSid, dateCreated, dateUpdated} = execution;
   //DEBUG
-  if (sid === 'FN9b9ece42fbbb8e99efee990bf44d479c') {
+  if (sid === 'FNe901295129e07f7e91532bd6521b7c3e') {
     console.log('execution: ', execution);
     console.log('context: ', context);
   }
