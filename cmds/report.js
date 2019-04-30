@@ -5,6 +5,7 @@ const ora = require('ora');
 const error = require('../src/error');
 const helpers = require('@jlafer/twilio-helpers');
 const {readJsonFile} = require('jlafer-node-util');
+const {makeMapFirstOfPairFn, mapKeysOfObject} = require('../src/temputil');
 const R = require('ramda');
 
 const log = x => console.log('tap value:', x);
@@ -153,8 +154,8 @@ const logTable = (table) => {
 const addRowToTable = R.curry((accum, stepAndContext, idx) => {
   const {startTime, prevTime, rows} = accum;
   const {step, context: stepContext} = stepAndContext;
-  const {transitionedFrom, transitionedTo, dateCreated} = step;
-  const endDt = new Date(dateCreated);
+  const {transitionedFrom: name, transitionedTo, dateCreated: endTS} = step;
+  const endDt = new Date(endTS);
   const endTime = endDt.getTime();
   const duration = endTime - prevTime;
   const elapsed = endTime - startTime;
@@ -163,38 +164,37 @@ const addRowToTable = R.curry((accum, stepAndContext, idx) => {
   const startTS = startDt.toISOString();
   const widgetVars = R.pathOr(
     {},
-    ['context', 'widgets', transitionedFrom],
+    ['context', 'widgets', name],
     stepContext
   );
 
-  const getFlowVars = R.pathOr({}, ['context', 'flow', 'variables']);
+  const _stepVars = {
+    name,
+    idx,
+    transitionedTo,
+    startTS,
+    endTS,
+    duration,
+    elapsed
+  };
 
-  // string -> string
   const addFlowNamespace = R.concat('flow.');
-  const addStepNamespace = R.concat('step.');
-  
-  // pair -> string
-  const prependFirstWithNamespace = R.pipe(R.head, addFlowNamespace);
-
-  // pair -> pair
-  const addNamespaceToKey =
-    R.converge(R.pair, [prependFirstWithNamespace, R.last]);
-
-  // context -> obj
+  const addFlowNamespaceToFirst = makeMapFirstOfPairFn(addFlowNamespace);
+  const addFlowNamespaceToVars = mapKeysOfObject(addFlowNamespaceToFirst);
+  const getFlowVars = R.pathOr({}, ['context', 'flow', 'variables']);
+  // namespaceFlowVars :: context -> obj
   const namespaceFlowVars = R.pipe(
-    getFlowVars, R.toPairs, R.map(addNamespaceToKey), R.fromPairs
+    getFlowVars, addFlowNamespaceToVars
   );
-
   const flowVars = namespaceFlowVars(stepContext);
 
+  const addStepNamespace = R.concat('step.');
+  const addStepNamespaceToFirst = makeMapFirstOfPairFn(addStepNamespace);
+  const addStepNamespaceToVars = mapKeysOfObject(addStepNamespaceToFirst);
+  const stepVars = addStepNamespaceToVars(_stepVars);
+
   const row = {
-    'step.name': transitionedFrom,
-    'step.idx': idx,
-    'step.transitionedTo': transitionedTo,
-    'step.startTS': startTS,
-    'step.endTS': dateCreated,
-    'step.duration': duration,
-    'step.elapsed': elapsed,
+    ...stepVars,
     ...widgetVars,
     ...flowVars
   };
@@ -205,10 +205,10 @@ const addRowToTable = R.curry((accum, stepAndContext, idx) => {
     rows: [...rows, row]};
 });
 
-const makeTable = (execAndContext, steps) => {
-  const {execution, context} = execAndContext;
-  const {sid, accountSid, dateCreated, dateUpdated} = execution;
-  const startDt = new Date(execution.dateCreated);
+const makeStepTable = (execAndContext, steps) => {
+  const {execution} = execAndContext;
+  const {dateCreated} = execution;
+  const startDt = new Date(dateCreated);
   const startTime = startDt.getTime();
   const accum = {startTime, prevTime: startTime, rows: []};
   const table = R.reverse(steps).reduce(addRowToTable(), accum);
@@ -220,8 +220,8 @@ const reportExecution = R.curry( async (client, flow, cfg, execAndContext) => {
   const {execution, context} = execAndContext;
   const {sid, accountSid, dateCreated, dateUpdated} = execution;
   const steps = await helpers.getSteps(client, flow.sid, execution.sid);
-  const stepTable = makeTable(execAndContext, steps);
-  logTable(stepTable);
+  const stepTable = makeStepTable(execAndContext, steps);
+  //logTable(stepTable);
   const customFlds = cfg.fields.map(calculateValue(stepTable));
   const stepRpts = steps.map(stepToRpt(execution, context));
   const call = context.context.trigger.call;
