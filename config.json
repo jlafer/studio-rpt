@@ -2,15 +2,30 @@
   "fields":[
     {
       "name":"centerStatus",
-      "filters":{
-        "widget":{
-          "name":"splitCenterState"
-        }
-      },
-      "data":["context","widgets","getCenterState","body"],
+      "where":[
+        {"step.name":"getCenterState"}
+      ],
+      "select":"body",
       "map":"identity",
       "agg":"last",
-      "default":""
+      "default":"open"
+    },
+    {
+      "name":"language",
+      "select":"flow.language",
+      "map":"identity",
+      "agg":"last",
+      "default":"English"
+    },
+    {
+      "name":"timeInMenu",
+      "where":[
+        {"step.name":"menuMain"}
+      ],
+      "select":"step.duration",
+      "map":"identity",
+      "agg":"sum",
+      "default":0
     }
   ]
 }

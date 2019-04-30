@@ -7,6 +7,8 @@ const helpers = require('@jlafer/twilio-helpers');
 const {readJsonFile} = require('jlafer-node-util');
 const R = require('ramda');
 
+const log = x => console.log('tap value:', x);
+
 const passesFilter = (stepAndContext, filter) => {
   const {step, context: stepContext} = stepAndContext;
   switch (filter.type) {
@@ -32,8 +34,8 @@ const getWidgetPath = R.pipe(
 );
 
 const getWidgetDataFromContext = (path, stepContext) => {
-  console.log(`getWidgetDataFromContext: path:`, path);
-  console.log(`getWidgetDataFromContext: stepContext:`, stepContext);
+  //console.log(`getWidgetDataFromContext: path:`, path);
+  //console.log(`getWidgetDataFromContext: stepContext:`, stepContext);
   return R.pathOr({}, path, stepContext);
 }
 
@@ -44,49 +46,57 @@ const getWidgetVariableData = R.converge(
   [getWidgetPath, R.prop('context')]
 );
 
-const stepFilter = R.curry((filters, stepAndContext) => {
-  console.log('stepFilter: for step:', stepAndContext.step);
-  console.log('stepFilter: for context:', stepAndContext.context);
-  const widgetVarData = getWidgetVariableData(stepAndContext);
-  console.log('stepFilter: widgetVarData:', widgetVarData);
-  const step = stepAndContext.step;
-  const widgetData = {...widgetVarData,
-    name: step.transitionedFrom,
-    event: step.name};
-  const widgetFilters = R.prop('widget', filters);
-  console.log('stepFilter: widgetFilters:', widgetFilters);
-  const passes = R.whereEq(widgetFilters, widgetData);
-  console.log('stepFilter: passes:', passes);
-  return passes;
+/*
+  where: [<clause>, ...]    // where clauses are ORed together
+
+  clause: {<varName>: <value>, ...}
+
+  select: <varName>
+
+  varName:
+    <name>            any widget variable
+    || step.<name>    where name is one of: name, idx, transitionedTo,
+                        transitionedFrom or <widget variable name>
+    || flow.<name>    where name is any flow variable
+
+  map: <function>
+
+  function: identity
+
+  agg: first || last || sum || count || min || max || concat
+
+  default: <any>
+*/
+
+const clauseMatchesRow = R.flip(R.whereEq);
+
+const where = R.curry((whereClauses, row) => {
+  if (!whereClauses || !whereClauses.length)
+    return true;
+  //const clauseMatchesRow = R.flip(R.whereEq)(row);
+  return R.any(clauseMatchesRow(row), whereClauses);
 });
 
-// stepFilterFnal :: filters -> stepAndContext -> boolean
-const stepFilterFnal = R.useWith(
-  R.whereEq,
-  R.prop('widget'),
-  getWidgetVariableData
-);
-
-const dataGetter = R.curry((dataSpec, stepAndContext) => {
-  const {step, context: stepContext} = stepAndContext;
+const dataGetter = R.curry((dataSpec, row) => {
   if (Array.isArray(dataSpec)) {
-    console.log(`dataGetter: context`, stepContext);
-    console.log(`dataGetter: returning ${R.path(dataSpec, stepContext)}`);
-    return R.path(dataSpec, stepContext);
+    //console.log(`dataGetter: context`, stepContext);
+    //console.log(`dataGetter: returning ${R.path(dataSpec, stepContext)}`);
+    return R.path(dataSpec, row);
   }
   if (typeof dataSpec === 'string')
-    return step.transitionedTo;
+    return R.prop(dataSpec, row);
   if (typeof dataSpec === 'number' && dataSpec == 1)
     return 1;
   console.log(`dataGetter: ${dataSpec} is an unsupported data spec!`);
   return 0;
 });
 
-const dataToValueMapper = R.curry((map, value) => {
+const dataToValueMapper = R.curry((map, defaultValue, value) => {
+  const result = value || defaultValue;
   if (map === 'identity')
-    return value;
+    return result;
   console.log(`dataToValueMapper: ${map} is an unsupported value map function!`);
-  return value;
+  return result;
 });
 
 const valueAggregator = R.curry((agg, accum, value) => {
@@ -114,33 +124,105 @@ const valueAggregator = R.curry((agg, accum, value) => {
   }
 });
 
-const calculateValue = R.curry((steps, field) => {
+const calculateValue = R.curry((stepTable, field) => {
+  const {rows} = stepTable;
   console.log('calculateValue: for field:', field);
-  const value = steps.filter(stepFilter(field.filters))
-  .map(dataGetter(field.data))
-  .map(dataToValueMapper(field.map))
-  .reduce(valueAggregator(field.agg), null)
+  const value = rows.filter(where(field.where))
+    .map(R.tap(log))
+    .map(dataGetter(field.select))
+    .map(dataToValueMapper(field.map, field.default))
+    .reduce(valueAggregator(field.agg), null);
+  console.log('calculateValue: value:', value);
   return {...field, value: (value || field.default)};
 });
 
 const stepToRpt = R.curry((execution, context, stepAndContext) => {
   const {step, context: stepContext} = stepAndContext;
-  console.log('step:', step);
-  console.log('stepContext:', stepContext);
+  //console.log('step:', step);
+  //console.log('stepContext:', stepContext);
   const {sid, name, transitionedFrom, transitionedTo, dateCreated} = step;
   return {sid, name, transitionedFrom, transitionedTo, dateCreated};
 });
+
+const logTable = (table) => {
+  table.rows.forEach(row => {
+    console.log('row:', row);
+  });
+};
+
+const addRowToTable = R.curry((accum, stepAndContext, idx) => {
+  const {startTime, prevTime, rows} = accum;
+  const {step, context: stepContext} = stepAndContext;
+  const {transitionedFrom, transitionedTo, dateCreated} = step;
+  const endDt = new Date(dateCreated);
+  const endTime = endDt.getTime();
+  const duration = endTime - prevTime;
+  const elapsed = endTime - startTime;
+  const startDt = new Date();
+  startDt.setTime(prevTime);
+  const startTS = startDt.toISOString();
+  const widgetVars = R.pathOr(
+    {},
+    ['context', 'widgets', transitionedFrom],
+    stepContext
+  );
+
+  const getFlowVars = R.pathOr({}, ['context', 'flow', 'variables']);
+
+  // string -> string
+  const addFlowNamespace = R.concat('flow.');
+  const addStepNamespace = R.concat('step.');
+  
+  // pair -> string
+  const prependFirstWithNamespace = R.pipe(R.head, addFlowNamespace);
+
+  // pair -> pair
+  const addNamespaceToKey =
+    R.converge(R.pair, [prependFirstWithNamespace, R.last]);
+
+  // context -> obj
+  const namespaceFlowVars = R.pipe(
+    getFlowVars, R.toPairs, R.map(addNamespaceToKey), R.fromPairs
+  );
+
+  const flowVars = namespaceFlowVars(stepContext);
+
+  const row = {
+    'step.name': transitionedFrom,
+    'step.idx': idx,
+    'step.transitionedTo': transitionedTo,
+    'step.startTS': startTS,
+    'step.endTS': dateCreated,
+    'step.duration': duration,
+    'step.elapsed': elapsed,
+    ...widgetVars,
+    ...flowVars
+  };
+  return {
+    startTime,
+    prevTime: endTime,
+    stepCnt: idx,   // don't count the trigger "widget"
+    rows: [...rows, row]};
+});
+
+const makeTable = (execAndContext, steps) => {
+  const {execution, context} = execAndContext;
+  const {sid, accountSid, dateCreated, dateUpdated} = execution;
+  const startDt = new Date(execution.dateCreated);
+  const startTime = startDt.getTime();
+  const accum = {startTime, prevTime: startTime, rows: []};
+  const table = R.reverse(steps).reduce(addRowToTable(), accum);
+  return table;
+};
+
 const reportExecution = R.curry( async (client, flow, cfg, execAndContext) => {
   const {friendlyName, version} = flow;
   const {execution, context} = execAndContext;
   const {sid, accountSid, dateCreated, dateUpdated} = execution;
-  //DEBUG
-  if (sid === 'FNe901295129e07f7e91532bd6521b7c3e') {
-    console.log('execution: ', execution);
-    console.log('context: ', context);
-  }
   const steps = await helpers.getSteps(client, flow.sid, execution.sid);
-  const customFlds = cfg.fields.map(calculateValue(steps));
+  const stepTable = makeTable(execAndContext, steps);
+  logTable(stepTable);
+  const customFlds = cfg.fields.map(calculateValue(stepTable));
   const stepRpts = steps.map(stepToRpt(execution, context));
   const call = context.context.trigger.call;
   let callProps = {};
