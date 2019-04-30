@@ -26,6 +26,26 @@
       "map":"identity",
       "agg":"sum",
       "default":0
+    },
+    {
+      "name":"functionCallTime",
+      "where":[
+        {"status_code":200}
+      ],
+      "select":"step.duration",
+      "map":"identity",
+      "agg":"sum",
+      "default":0
+    },
+    {
+      "name":"abandonCnt",
+      "where":[
+        {"QueueResult":"hangup"}
+      ],
+      "select":"step.idx",
+      "map":"identity",
+      "agg":"count",
+      "default":0
     }
   ]
 }

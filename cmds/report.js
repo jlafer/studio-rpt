@@ -1,5 +1,11 @@
 /*
   This module supports the 'report' command of the 'studiorpt' CLI program.
+
+  Known limitations:
+  - there is no data on flow config (e.g., DTMF-allowed on menu, timeouts)
+  - there is no selecting of steps by widget class - only be name(s)
+  - there is no count of repeated menus due to timeout
+  - granularity of timing is 1 second
 */
 const ora = require('ora');
 const error = require('../src/error');
@@ -9,22 +15,6 @@ const {makeMapFirstOfPairFn, mapKeysOfObject} = require('../src/temputil');
 const R = require('ramda');
 
 const log = x => console.log('tap value:', x);
-
-const passesFilter = (stepAndContext, filter) => {
-  const {step, context: stepContext} = stepAndContext;
-  switch (filter.type) {
-    case 'name':
-      if (filter.value === step.transitionedTo) {
-        console.log(`passesFilter: passed ${filter.value} by name`)
-        return true;
-      }
-      else
-        return false;
-    default:
-      console.log(`passesFilter: ${filter.type} is an unsupported filter type!`);
-      return false;
-  }
-};
 
 const appendItem = R.curry((list, item) => [...list, item]);
 
@@ -117,8 +107,16 @@ const valueAggregator = R.curry((agg, accum, value) => {
   switch (agg) {
     case 'sum':
       return (result + value);
+    case 'count':
+      return (result + 1);
+    case 'max':
+      return Math.max(result, value);
+    case 'first':
+      return result || value;
     case 'last':
       return value;
+    case 'path':
+      return `${result}:${value}`;
     default:
       console.log(`valueAggregator: ${agg} is an unsupported agg function!`);
       return value;
@@ -127,22 +125,13 @@ const valueAggregator = R.curry((agg, accum, value) => {
 
 const calculateValue = R.curry((stepTable, field) => {
   const {rows} = stepTable;
-  console.log('calculateValue: for field:', field);
+  //console.log('calculateValue: for field:', field);
   const value = rows.filter(where(field.where))
-    .map(R.tap(log))
     .map(dataGetter(field.select))
     .map(dataToValueMapper(field.map, field.default))
     .reduce(valueAggregator(field.agg), null);
-  console.log('calculateValue: value:', value);
+  //console.log('calculateValue: value:', value);
   return {...field, value: (value || field.default)};
-});
-
-const stepToRpt = R.curry((execution, context, stepAndContext) => {
-  const {step, context: stepContext} = stepAndContext;
-  //console.log('step:', step);
-  //console.log('stepContext:', stepContext);
-  const {sid, name, transitionedFrom, transitionedTo, dateCreated} = step;
-  return {sid, name, transitionedFrom, transitionedTo, dateCreated};
 });
 
 const logTable = (table) => {
@@ -154,7 +143,10 @@ const logTable = (table) => {
 const addRowToTable = R.curry((accum, stepAndContext, idx) => {
   const {startTime, prevTime, rows} = accum;
   const {step, context: stepContext} = stepAndContext;
-  const {transitionedFrom: name, transitionedTo, dateCreated: endTS} = step;
+  const {
+    transitionedFrom: name, transitionedTo, name: result,
+    dateCreated: endTS
+  } = step;
   const endDt = new Date(endTS);
   const endTime = endDt.getTime();
   const duration = endTime - prevTime;
@@ -175,7 +167,8 @@ const addRowToTable = R.curry((accum, stepAndContext, idx) => {
     startTS,
     endTS,
     duration,
-    elapsed
+    elapsed,
+    result
   };
 
   const addFlowNamespace = R.concat('flow.');
@@ -215,6 +208,9 @@ const makeStepTable = (execAndContext, steps) => {
   return table;
 };
 
+const keyStartsWithStep = (_v, k) => R.test(/^step./, k);
+const reportRow = row => R.pickBy(keyStartsWithStep, row);
+
 const reportExecution = R.curry( async (client, flow, cfg, execAndContext) => {
   const {friendlyName, version} = flow;
   const {execution, context} = execAndContext;
@@ -222,10 +218,11 @@ const reportExecution = R.curry( async (client, flow, cfg, execAndContext) => {
   const steps = await helpers.getSteps(client, flow.sid, execution.sid);
   const stepTable = makeStepTable(execAndContext, steps);
   //logTable(stepTable);
+  const stepRpts = stepTable.rows.map(reportRow);
+  const lastStep = R.last(stepRpts)['step.name'];
   const customFlds = cfg.fields.map(calculateValue(stepTable));
-  const stepRpts = steps.map(stepToRpt(execution, context));
   const call = context.context.trigger.call;
-  let callProps = {};
+  const callProps = {};
   if (call) {
     const {CallSid, From, To} = call;
     callProps.callSid = CallSid;
@@ -239,8 +236,9 @@ const reportExecution = R.curry( async (client, flow, cfg, execAndContext) => {
     appVersion: version,
     startTime: dateCreated,
     endTime: dateUpdated,
+    lastStep,
     ...callProps,
-    stepRpts: stepRpts
+    stepRpts
   };
   customFlds.forEach(fld => {
     rpt[fld.name] = fld.value;
