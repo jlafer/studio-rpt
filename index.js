@@ -14,6 +14,7 @@ module.exports = () => {
   .option('-F, --fromDt <from date>', 'the dateFrom as yyyy-mm-ddThh:mm:ss-hh:mm')
   .option('-T, --toDt [to date]', 'the dateTo as yyyy-mm-ddThh:mm:ss-hh:mm')
   .option('-c, --cfgPath <config path>', 'the config file path')
+  .option('-o, --outDir <output dir>', 'the output directory')
   .action(function (args) {
     require('./cmds/report')(args);
   });

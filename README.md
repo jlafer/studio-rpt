@@ -77,12 +77,15 @@ Each detail report provides the following fields:
 
 ## Known limitations
 - There is no data on flow config (e.g., DTMF-allowed on menu, timeout values).
-- There is no selecting of steps by widget class - only be name(s).
-- There is no count of repeated menus due to timeout.
+- There is no selecting of steps by widget class - only by name(s) or other step variable.
+- There is no count of repeated menus due to a timeout.
 - The granularity of timing is 1 second.
+- There is no Task SID for tasks that are sent to be routed. This would make it easier to join the studiorpt data with that in Flex WFO.
+
+Please let me know if there are other features that you would like to see in the program.
 
 ## Configuration
-Custom fields can be configured that are reported as fields in the summary execution report. Custom fields are specified in a `config.json` file, whose location is indicated with the --cfgPath command-line argument. A sample config file is located in the project folder (`sampleConfig.json`). The required file format is outlined below.
+Custom fields can be configured that are reported as fields in the summary execution report. Custom fields are specified in a `config.json` file, whose location is indicated with the --cfgPath command-line argument. A sample config file is located in the project folder (`sample-config.json`). The required file format is outlined below.
 
 The report configuration file must follow this format:
 ```
@@ -90,9 +93,7 @@ The report configuration file must follow this format:
   "fields":[
     {
       "name":"NAME",
-      "where":[
-        {"VARNAME":VALUE}
-      ],
+      "where":[CLAUSE, ...],
       "select":"VARNAME",
       "map":"FNAME",
       "agg":"AGGNAME",
@@ -102,6 +103,12 @@ The report configuration file must follow this format:
   ]
 }
 
+CLAUSE ::
+  {"VARNAME":VALUE}
+  || {"VARNAME":[VALUE, ...]}
+  || {"VARNAME": {OPERATOR: OPERAND}, ...}}
+OPERATOR :: not || gt || lt
+OPERAND :: null || VALUE
 NAME :: <widget name>
 VARNAME :: <var name> || step.<var name> || flow.<var name>
 VALUE :: string || integer

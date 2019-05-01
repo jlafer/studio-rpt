@@ -10,41 +10,63 @@ const R = require('ramda');
 
 const log = x => console.log('tap value:', x);
 
-const appendItem = R.curry((list, item) => [...list, item]);
+//const clauseMatchesRow = R.flip(R.whereEq);
 
-// getWidgetPath :: stepAndContext -> [path]
-const getWidgetPath = R.pipe(
-  R.path(['step', 'transitionedFrom']),
-  appendItem(['context', 'widgets'])
-);
+const valueNotObject = value => (typeof value !== 'object');
+const valueIsObject = value =>
+  (typeof value === 'object' && ! Array.isArray(value));
+const valueIsArray = value => Array.isArray(value);
+const isNotNil = R.complement(R.isNil);
+const isNotEquals = R.complement(R.equals);
 
-const getWidgetDataFromContext = (path, stepContext) => {
-  //console.log(`getWidgetDataFromContext: path:`, path);
-  //console.log(`getWidgetDataFromContext: stepContext:`, stepContext);
-  return R.pathOr({}, path, stepContext);
-}
+const kvToOpPred = (operatorKV) => {
+  const {operator, operand} = operatorKV;
+  switch (operator) {
+    case 'not':
+      if (operand === 'null')
+        return isNotNil;
+      else
+        return isNotEquals(operand);
+      case 'gt':
+        return R.lt(operand);
+      case 'lt':
+        return R.gt(operand);
+      default:
+        console.log(`${operator} is an unsupported filter operator!`);
+        return R.F;
+    }
+};
 
-// getWidgetVariableData :: stepAndContext -> widgetData
-const getWidgetVariableData = R.converge(
-  getWidgetDataFromContext,
-  [getWidgetPath, R.prop('context')]
-);
+const makeOperatorsPred = whereOperatorsObj =>
+  R.map(kvToOpPred, whereOperatorsObj);
 
-const clauseMatchesRow = R.flip(R.whereEq);
+const listToInPred = list => R.flip(R.includes)(list);
+
+const makeInPred = (whereInObj) => R.map(listToInPred, whereInObj);
+
+const clauseMatchesRow = R.curry((row, clause) => {
+  const whereEqObj = R.filter(valueNotObject, clause);
+  const whereOperatorsObj = R.filter(valueIsObject, clause);
+  const whereInObj = R.filter(valueIsArray, clause);
+  const whereOpsPredObj = makeOperatorsPred(whereOperatorsObj);
+  const whereInPredObj = makeInPred(whereInObj);
+  const allPredicates = R.allPass([
+    R.whereEq(whereEqObj),
+    R.where(whereOpsPredObj),
+    R.where(whereInPredObj)
+  ]);
+  return allPredicates(row);
+});
 
 const where = R.curry((whereClauses, row) => {
   if (!whereClauses || !whereClauses.length)
     return true;
-  //const clauseMatchesRow = R.flip(R.whereEq)(row);
   return R.any(clauseMatchesRow(row), whereClauses);
 });
 
 const dataGetter = R.curry((dataSpec, row) => {
-  if (Array.isArray(dataSpec)) {
-    //console.log(`dataGetter: context`, stepContext);
-    //console.log(`dataGetter: returning ${R.path(dataSpec, stepContext)}`);
+  if (Array.isArray(dataSpec))
     return R.path(dataSpec, row);
-  }
   if (typeof dataSpec === 'string')
     return R.prop(dataSpec, row);
   if (typeof dataSpec === 'number' && dataSpec == 1)
@@ -218,7 +240,7 @@ const reportExecution = R.curry( async (client, flow, cfg, execAndContext) => {
 });
 
 module.exports = async (args) => {
-  const {acct, auth, flowSid, fromDt, toDt, cfgPath} = args;
+  const {acct, auth, flowSid, fromDt, toDt, cfgPath, outDir} = args;
 
   const spinner = ora().start();
   const client = require('twilio')(acct, auth);
