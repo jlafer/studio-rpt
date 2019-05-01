@@ -14,7 +14,6 @@ module.exports = () => {
   .option('-F, --fromDt <from date>', 'the dateFrom as yyyy-mm-ddThh:mm:ss-hh:mm')
   .option('-T, --toDt [to date]', 'the dateTo as yyyy-mm-ddThh:mm:ss-hh:mm')
   .option('-c, --cfgPath <config path>', 'the config file path')
-  .option('-f, --flowSid <flowSid>', 'a Studio workflow SID')
   .action(function (args) {
     require('./cmds/report')(args);
   });
@@ -26,9 +25,9 @@ module.exports = () => {
   .option('-A, --auth <auth token>', 'Twilio auth token')
   .option('-t, --type <workflow, execution, step, etc>', 'the type of Studio object')
   .option('-f, --flowSid [flowSid]', 'a Studio workflow SID')
-  .option('-s, --sid [object sid]', 'the SID of the object to get')
   .option('-F, --fromDt [from date]', 'the dateFrom as yyyy-mm-ddThh:mm:ss-hh:mm')
   .option('-T, --toDt [to date]', 'the dateTo as yyyy-mm-ddThh:mm:ss-hh:mm')
+  .option('-s, --sid [object sid]', 'the SID of the object to get')
   .action(function (args) {
     require('./cmds/list')(args);
   });

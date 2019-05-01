@@ -1,11 +1,5 @@
 /*
   This module supports the 'report' command of the 'studiorpt' CLI program.
-
-  Known limitations:
-  - there is no data on flow config (e.g., DTMF-allowed on menu, timeouts)
-  - there is no selecting of steps by widget class - only be name(s)
-  - there is no count of repeated menus due to timeout
-  - granularity of timing is 1 second
 */
 const ora = require('ora');
 const error = require('../src/error');
@@ -30,34 +24,11 @@ const getWidgetDataFromContext = (path, stepContext) => {
   return R.pathOr({}, path, stepContext);
 }
 
-
 // getWidgetVariableData :: stepAndContext -> widgetData
 const getWidgetVariableData = R.converge(
   getWidgetDataFromContext,
   [getWidgetPath, R.prop('context')]
 );
-
-/*
-  where: [<clause>, ...]    // where clauses are ORed together
-
-  clause: {<varName>: <value>, ...}
-
-  select: <varName>
-
-  varName:
-    <name>            any widget variable
-    || step.<name>    where name is one of: name, idx, transitionedTo,
-                        transitionedFrom or <widget variable name>
-    || flow.<name>    where name is any flow variable
-
-  map: <function>
-
-  function: identity
-
-  agg: first || last || sum || count || min || max || concat
-
-  default: <any>
-*/
 
 const clauseMatchesRow = R.flip(R.whereEq);
 
@@ -141,19 +112,19 @@ const logTable = (table) => {
 };
 
 const addRowToTable = R.curry((accum, stepAndContext, idx) => {
-  const {startTime, prevTime, rows} = accum;
+  const {startTimeMSec, prevTimeMSec, rows} = accum;
   const {step, context: stepContext} = stepAndContext;
   const {
     transitionedFrom: name, transitionedTo, name: result,
-    dateCreated: endTS
+    dateCreated: endTime
   } = step;
-  const endDt = new Date(endTS);
-  const endTime = endDt.getTime();
-  const duration = endTime - prevTime;
-  const elapsed = endTime - startTime;
+  const endDt = new Date(endTime);
+  const endTimeMSec = endDt.getTime();
+  const duration = endTimeMSec - prevTimeMSec;
+  const elapsed = endTimeMSec - startTimeMSec;
   const startDt = new Date();
-  startDt.setTime(prevTime);
-  const startTS = startDt.toISOString();
+  startDt.setTime(prevTimeMSec);
+  const startTime = startDt.toISOString();
   const widgetVars = R.pathOr(
     {},
     ['context', 'widgets', name],
@@ -164,8 +135,8 @@ const addRowToTable = R.curry((accum, stepAndContext, idx) => {
     name,
     idx,
     transitionedTo,
-    startTS,
-    endTS,
+    startTime,
+    endTime,
     duration,
     elapsed,
     result
@@ -192,8 +163,8 @@ const addRowToTable = R.curry((accum, stepAndContext, idx) => {
     ...flowVars
   };
   return {
-    startTime,
-    prevTime: endTime,
+    startTimeMSec,
+    prevTimeMSec: endTimeMSec,
     stepCnt: idx,   // don't count the trigger "widget"
     rows: [...rows, row]};
 });
@@ -202,8 +173,8 @@ const makeStepTable = (execAndContext, steps) => {
   const {execution} = execAndContext;
   const {dateCreated} = execution;
   const startDt = new Date(dateCreated);
-  const startTime = startDt.getTime();
-  const accum = {startTime, prevTime: startTime, rows: []};
+  const startTimeMSec = startDt.getTime();
+  const accum = {startTimeMSec, prevTimeMSec: startTimeMSec, rows: []};
   const table = R.reverse(steps).reduce(addRowToTable(), accum);
   return table;
 };
