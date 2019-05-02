@@ -1,26 +1,30 @@
 /*
   This module supports the 'report' command of the 'studiorpt' CLI program.
+
+  TODO
+  - move function builders to setup scope
+  - convert switch statements to objects
+  - support select of a constant (1)
+  - add timezone support for output
+  - move utility functions out
+  - create fnal util package
+  - add ISO date utilities
+  - add test suite
 */
 const ora = require('ora');
 const error = require('../src/error');
 const helpers = require('@jlafer/twilio-helpers');
 const {readJsonFile} = require('jlafer-node-util');
-const {makeMapFirstOfPairFn, mapKeysOfObject} = require('../src/temputil');
+const {log, makeMapFirstOfPairFn, mapKeysOfObject, valueNotObject,
+  valueIsObject, valueIsArray, isNotNil, isNotEquals}
+= require('../src/temputil');
 const R = require('ramda');
 
-const log = x => console.log('tap value:', x);
-
-//const clauseMatchesRow = R.flip(R.whereEq);
-
-const valueNotObject = value => (typeof value !== 'object');
-const valueIsObject = value =>
-  (typeof value === 'object' && ! Array.isArray(value));
-const valueIsArray = value => Array.isArray(value);
-const isNotNil = R.complement(R.isNil);
-const isNotEquals = R.complement(R.equals);
-
-const kvToOpPred = (operatorKV) => {
-  const {operator, operand} = operatorKV;
+const kvToOpPred = (whereOperatorsObj) => {
+  const operatorPairs = R.toPairs(whereOperatorsObj);
+  if (operatorPairs.length == 0)
+    return R.T;
+  const [operator, operand] = operatorPairs[0];
   switch (operator) {
     case 'not':
       if (operand === 'null')
@@ -128,9 +132,7 @@ const calculateValue = R.curry((stepTable, field) => {
 });
 
 const logTable = (table) => {
-  table.rows.forEach(row => {
-    console.log('row:', row);
-  });
+  table.rows.forEach(row => {console.log('row:', row);});
 };
 
 const addRowToTable = R.curry((accum, stepAndContext, idx) => {
@@ -154,20 +156,25 @@ const addRowToTable = R.curry((accum, stepAndContext, idx) => {
   );
 
   const _stepVars = {
-    name,
-    idx,
-    transitionedTo,
-    startTime,
-    endTime,
-    duration,
-    elapsed,
-    result
+    name, idx, transitionedTo, startTime, endTime, duration, elapsed, result
   };
+
+  const addTriggerNamespace = R.concat('trigger.');
+  const addTriggerNamespaceToFirst = makeMapFirstOfPairFn(addTriggerNamespace);
+  const addTriggerNamespaceToVars = mapKeysOfObject(addTriggerNamespaceToFirst);
+  const getTriggerVars = R.pathOr({}, ['context', 'trigger', 'call']);
+  const namespaceTriggerVars = R.pipe(
+    getTriggerVars, addTriggerNamespaceToVars
+  );
+  const triggerVars = (idx == 0)
+    ? namespaceTriggerVars(stepContext)
+    : {};
 
   const addFlowNamespace = R.concat('flow.');
   const addFlowNamespaceToFirst = makeMapFirstOfPairFn(addFlowNamespace);
   const addFlowNamespaceToVars = mapKeysOfObject(addFlowNamespaceToFirst);
   const getFlowVars = R.pathOr({}, ['context', 'flow', 'variables']);
+
   // namespaceFlowVars :: context -> obj
   const namespaceFlowVars = R.pipe(
     getFlowVars, addFlowNamespaceToVars
@@ -182,7 +189,8 @@ const addRowToTable = R.curry((accum, stepAndContext, idx) => {
   const row = {
     ...stepVars,
     ...widgetVars,
-    ...flowVars
+    ...flowVars,
+    ...triggerVars
   };
   return {
     startTimeMSec,
@@ -210,7 +218,7 @@ const reportExecution = R.curry( async (client, flow, cfg, execAndContext) => {
   const {sid, accountSid, dateCreated, dateUpdated} = execution;
   const steps = await helpers.getSteps(client, flow.sid, execution.sid);
   const stepTable = makeStepTable(execAndContext, steps);
-  //logTable(stepTable);
+  logTable(stepTable);
   const stepRpts = stepTable.rows.map(reportRow);
   const lastStep = R.last(stepRpts)['step.name'];
   const customFlds = cfg.fields.map(calculateValue(stepTable));
