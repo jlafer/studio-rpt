@@ -20,8 +20,8 @@ const {log, makeMapFirstOfPairFn, mapKeysOfObject, valueNotObject,
 = require('../src/temputil');
 const R = require('ramda');
 
-const kvToOpPred = (whereOperatorsObj) => {
-  const operatorPairs = R.toPairs(whereOperatorsObj);
+const kvToOpsPred = (whereOpsObj) => {
+  const operatorPairs = R.toPairs(whereOpsObj);
   if (operatorPairs.length == 0)
     return R.T;
   const [operator, operand] = operatorPairs[0];
@@ -41,31 +41,33 @@ const kvToOpPred = (whereOperatorsObj) => {
     }
 };
 
-const makeOperatorsPred = whereOperatorsObj =>
-  R.map(kvToOpPred, whereOperatorsObj);
+const makeOpsPred = whereOpsObj =>
+  R.map(kvToOpsPred, whereOpsObj);
 
 const listToInPred = list => R.flip(R.includes)(list);
 
 const makeInPred = (whereInObj) => R.map(listToInPred, whereInObj);
 
-const clauseMatchesRow = R.curry((row, clause) => {
+const makeRowFilterFn = clause => {
+  console.log(`makeRowFilterFn: for clause:`, clause)
   const whereEqObj = R.filter(valueNotObject, clause);
-  const whereOperatorsObj = R.filter(valueIsObject, clause);
+  const whereOpsObj = R.filter(valueIsObject, clause);
+  const whereOpsPredObj = makeOpsPred(whereOpsObj);
   const whereInObj = R.filter(valueIsArray, clause);
-  const whereOpsPredObj = makeOperatorsPred(whereOperatorsObj);
   const whereInPredObj = makeInPred(whereInObj);
-  const allPredicates = R.allPass([
+  const filterFn = R.allPass([
     R.whereEq(whereEqObj),
     R.where(whereOpsPredObj),
     R.where(whereInPredObj)
   ]);
-  return allPredicates(row);
-});
+  return (row) => {
+    console.log(`filtering row ${row['step.name']}`)
+    return filterFn(row);
+  };
+}
 
-const where = R.curry((whereClauses, row) => {
-  if (!whereClauses || !whereClauses.length)
-    return true;
-  return R.any(clauseMatchesRow(row), whereClauses);
+const where = R.curry((field, row) => {
+  return field.fieldWhereFn(row);
 });
 
 const dataGetter = R.curry((dataSpec, row) => {
@@ -123,7 +125,7 @@ const valueAggregator = R.curry((agg, accum, value) => {
 const calculateValue = R.curry((stepTable, field) => {
   const {rows} = stepTable;
   //console.log('calculateValue: for field:', field);
-  const value = rows.filter(where(field.where))
+  const value = rows.filter(where(field))
     .map(dataGetter(field.select))
     .map(dataToValueMapper(field.map, field.default))
     .reduce(valueAggregator(field.agg), null);
@@ -212,7 +214,9 @@ const makeStepTable = (execAndContext, steps) => {
 const keyStartsWithStep = (_v, k) => R.test(/^step./, k);
 const reportRow = row => R.pickBy(keyStartsWithStep, row);
 
-const reportExecution = R.curry( async (client, flow, cfg, execAndContext) => {
+const reportExecution = R.curry(
+    async (client, flow, cfgWithFns, execAndContext) =>
+{
   const {friendlyName, version} = flow;
   const {execution, context} = execAndContext;
   const {sid, accountSid, dateCreated, dateUpdated} = execution;
@@ -221,7 +225,7 @@ const reportExecution = R.curry( async (client, flow, cfg, execAndContext) => {
   logTable(stepTable);
   const stepRpts = stepTable.rows.map(reportRow);
   const lastStep = R.last(stepRpts)['step.name'];
-  const customFlds = cfg.fields.map(calculateValue(stepTable));
+  const customFlds = cfgWithFns.fields.map(calculateValue(stepTable));
   const call = context.context.trigger.call;
   const callProps = {};
   if (call) {
@@ -247,6 +251,25 @@ const reportExecution = R.curry( async (client, flow, cfg, execAndContext) => {
   return rpt;
 });
 
+const getFieldWhereFn = (field) => {
+  const whereClauses = field.where;
+  if (!whereClauses || !whereClauses.length)
+    return R.T;
+  const filterFns = R.map(makeRowFilterFn, whereClauses);
+  return R.anyPass(filterFns);
+};
+
+const addWhereFn = (field) => {
+  const fieldWhereFn = getFieldWhereFn(field)
+  return {...field, fieldWhereFn}
+};
+
+const addFns = (cfg) => {
+  const {fields, ...rest} = cfg;
+  const fieldsWithFns = fields.map(addWhereFn);
+  return {...rest, fields: fieldsWithFns}
+};
+
 module.exports = async (args) => {
   const {acct, auth, flowSid, fromDt, toDt, cfgPath, outDir} = args;
 
@@ -254,10 +277,11 @@ module.exports = async (args) => {
   const client = require('twilio')(acct, auth);
 
   const cfg = await readJsonFile(cfgPath);
+  const cfgWithFns = addFns(cfg);
   const flow = await helpers.getWorkflow(client, flowSid);
   helpers.getExecutions(client, flowSid, fromDt, toDt)
   .then(execs =>
-    Promise.all(execs.map(reportExecution(client, flow, cfg)))
+    Promise.all(execs.map(reportExecution(client, flow, cfgWithFns)))
   )
   .then((execRpts) => {
     spinner.stop();
