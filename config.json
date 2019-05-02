@@ -1,4 +1,5 @@
 {
+  "delimiter":",",
   "fields":[
     {
       "name":"centerStatus",

@@ -45,8 +45,8 @@ The `studiorpt report` command can be used for producing CSV-format report files
 Two output files can be produced -- an execution summary report and/or a detailed step execution report. The output directory command-line argument (`--outdir`) is used to specify where the files are written.
 
 File names take the following format:
-- execution summary reports: {workflow app}\_{workflow version}\_summary\_{FROM_TS}\_{TO_TS}.csv
-- execution detail reports: {workflow app}\_{workflow version}\_detail\_{FROM_TS}\_{TO_TS}.csv
+- execution summary reports: {workflow SID}\_{workflow version}\_summary\_{FROM_TS}\_{TO_TS}.csv
+- execution detail reports: {workflow SID}\_{workflow version}\_detail\_{FROM_TS}\_{TO_TS}.csv
 
 ## Report Data
 Each summary execution report provides the following fields:

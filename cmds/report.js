@@ -4,22 +4,33 @@
   TODO
   - add detail report
   - change output to .csv format
+  - add test suite
   - convert switch statements to objects
   - support select of a constant (1)
-  - add timezone support for output
   - move utility functions out
   - create fnal util package
-  - add ISO date utilities
-  - add test suite
+  - add timezone support for output
 */
+
 const ora = require('ora');
 const error = require('../src/error');
 const helpers = require('@jlafer/twilio-helpers');
 const {readJsonFile} = require('jlafer-node-util');
 const {log, makeMapFirstOfPairFn, mapKeysOfObject, valueNotObject,
-  valueIsObject, valueIsArray, isNotNil, isNotEquals}
+  valueIsObject, valueIsArray, isNotNil, isNotEquals,
+  openFile, writeToFile, closeFile}
 = require('../src/temputil');
 const R = require('ramda');
+
+const stdSummFlds = [
+  'sid', 'accountSid', 'appName', 'appVersion', 'startTime', 'endTime',
+  'lastStep', 'callSid', 'from', 'to'
+];
+
+const stdDtlFlds = [
+  'name', 'idx', 'transitionedTo', 'startTime', 'endTime', 'duration',
+  'elapsed', 'result'
+];
 
 const kvToOpsPred = (whereOpsObj) => {
   const operatorPairs = R.toPairs(whereOpsObj);
@@ -50,7 +61,7 @@ const listToInPred = list => R.flip(R.includes)(list);
 const makeInPred = (whereInObj) => R.map(listToInPred, whereInObj);
 
 const makeRowFilterFn = clause => {
-  console.log(`makeRowFilterFn: for clause:`, clause)
+  //console.log(`makeRowFilterFn: for clause:`, clause)
   const whereEqObj = R.filter(valueNotObject, clause);
   const whereOpsObj = R.filter(valueIsObject, clause);
   const whereOpsPredObj = makeOpsPred(whereOpsObj);
@@ -62,7 +73,7 @@ const makeRowFilterFn = clause => {
     R.where(whereInPredObj)
   ]);
   return (row) => {
-    console.log(`filtering row ${row['step.name']}`)
+    //console.log(`filtering row ${row['step.name']}`)
     return filterFn(row);
   };
 }
@@ -98,7 +109,7 @@ const dataGetter = R.curry((dataSpec, row) => {
     return R.prop(dataSpec, row);
   if (typeof dataSpec === 'number' && dataSpec == 1)
     return 1;
-  console.log(`dataGetter: ${dataSpec} is an unsupported data spec!`);
+  console.log(`${dataSpec} is an unsupported data spec!`);
   return 0;
 });
 
@@ -106,7 +117,7 @@ const dataToValueMapper = R.curry((map, defaultValue, value) => {
   const result = value || defaultValue;
   if (map === 'identity')
     return result;
-  console.log(`dataToValueMapper: ${map} is an unsupported value map function!`);
+  console.log(`${map} is an unsupported value map function!`);
   return result;
 });
 
@@ -138,7 +149,7 @@ const valueAggregator = R.curry((agg, accum, value) => {
     case 'path':
       return `${result}:${value}`;
     default:
-      console.log(`valueAggregator: ${agg} is an unsupported agg function!`);
+      console.log(`${agg} is an unsupported agg function!`);
       return value;
   }
 });
@@ -222,7 +233,7 @@ const reportExecution = R.curry(
   const {sid, accountSid, dateCreated, dateUpdated} = execution;
   const steps = await helpers.getSteps(client, flow.sid, execution.sid);
   const stepTable = makeStepTable(execAndContext, steps);
-  logTable(stepTable);
+  //logTable(stepTable);
   const stepRpts = stepTable.rows.map(reportRow);
   const lastStep = R.last(stepRpts)['step.name'];
   const customFlds = cfgWithFns.fields.map(calculateValue(stepTable));
@@ -264,10 +275,36 @@ const addWhereFn = (field) => {
   return {...field, fieldWhereFn}
 };
 
-const addFns = (cfg) => {
-  const {fields, ...rest} = cfg;
+const writeCsvHeader = (cfg, fd) => {
+  const header = cfg.header.join(cfg.delimiter);
+  fs.appendFile(fd, header, (err) => {
+    if (err) throw err;
+
+  })
+};
+
+const makeHeader = (stdSummFlds, fields) => {
+  return [...stdSummFlds, ...fields.map(R.prop('name'))];
+};
+
+const fillOutConfig = (stdSummFlds, rawCfg) => {
+  const {fields, ...rest} = rawCfg;
+
   const fieldsWithFns = fields.map(addWhereFn);
-  return {...rest, fields: fieldsWithFns}
+  const summHeader = makeHeader(stdSummFlds, fields);
+  return {
+    ...rest,
+    fields: fieldsWithFns,
+    summHeader
+  };
+};
+
+const makeSummaryText = (cfg, execRpt) => {
+  const propsToDelimitedString = R.pipe(
+    R.props(cfg.summHeader),
+    R.join(cfg.delimiter)
+  );
+  return propsToDelimitedString(execRpt);
 };
 
 module.exports = async (args) => {
@@ -276,16 +313,25 @@ module.exports = async (args) => {
   const spinner = ora().start();
   const client = require('twilio')(acct, auth);
 
-  const cfg = await readJsonFile(cfgPath);
-  const cfgWithFns = addFns(cfg);
+  const rawCfg = await readJsonFile(cfgPath);
+  const cfg = fillOutConfig(stdSummFlds, rawCfg);
   const flow = await helpers.getWorkflow(client, flowSid);
+  const summPath = `${outDir}/${flow.sid}_${flow.version}_summary_${fromDt}_${toDt}.csv`;
+  const summFD = await openFile(summPath, 'w');
+  await writeToFile (summFD, cfg.summHeader.join(cfg.delimiter)+'\n');
   helpers.getExecutions(client, flowSid, fromDt, toDt)
   .then(execs =>
-    Promise.all(execs.map(reportExecution(client, flow, cfgWithFns)))
+    Promise.all(execs.map(reportExecution(client, flow, cfg)))
   )
   .then((execRpts) => {
     spinner.stop();
-    execRpts.forEach(execRpt => console.log(execRpt));
+    execRpts.forEach(async execRpt => {
+      let summText = makeSummaryText(cfg, execRpt);
+      await writeToFile(summFD, summText+'\n');
+    });
+  })
+  .then(() => {
+    closeFile(summFD);
   })
   .catch(err => {
     spinner.stop();

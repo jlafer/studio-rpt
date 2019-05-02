@@ -1,4 +1,5 @@
 const R = require('ramda');
+const fs = require('fs');
 
 const log = x => console.log('tap value:', x);
 
@@ -21,6 +22,45 @@ const valueIsArray = value => Array.isArray(value);
 const isNotNil = R.complement(R.isNil);
 const isNotEquals = R.complement(R.equals);
 
+const openFile = (path, mode) => {
+  return new Promise(function(resolve, reject) {
+    fs.open(path, mode,
+      function(err, fd) {
+        if (err)
+          reject(err);
+        else
+          resolve(fd);
+      }
+    );
+  });
+};
+
+const writeToFile = (fd, text) => {
+  return new Promise(function(resolve, reject) {
+    fs.appendFile(fd, text, 'utf8',
+      function(err, fd) {
+        if (err)
+          reject(err);
+        else
+          resolve(null);
+      }
+    );
+  });
+};
+
+const closeFile = (fd) => {
+  return new Promise(function(resolve, reject) {
+    fs.close(fd,
+      function(err, fd) {
+        if (err)
+          reject(err);
+        else
+          resolve(null);
+      }
+    );
+  });
+};
+
 module.exports = {
   log,
   makeMapFirstOfPairFn,
@@ -29,5 +69,8 @@ module.exports = {
   valueIsObject,
   valueIsArray,
   isNotNil,
-  isNotEquals
+  isNotEquals,
+  openFile,
+  writeToFile,
+  closeFile
 };
