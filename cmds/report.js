@@ -2,7 +2,8 @@
   This module supports the 'report' command of the 'studiorpt' CLI program.
 
   TODO
-  - move function builders to setup scope
+  - add detail report
+  - change output to .csv format
   - convert switch statements to objects
   - support select of a constant (1)
   - add timezone support for output
@@ -65,6 +66,26 @@ const makeRowFilterFn = clause => {
     return filterFn(row);
   };
 }
+
+const addTriggerNamespace = R.concat('trigger.');
+const addTriggerNamespaceToFirst = makeMapFirstOfPairFn(addTriggerNamespace);
+const addTriggerNamespaceToVars = mapKeysOfObject(addTriggerNamespaceToFirst);
+const getTriggerVars = R.pathOr({}, ['context', 'trigger', 'call']);
+const qualifyTriggerVars = R.pipe(
+  getTriggerVars, addTriggerNamespaceToVars
+);
+
+const addFlowNamespace = R.concat('flow.');
+const addFlowNamespaceToFirst = makeMapFirstOfPairFn(addFlowNamespace);
+const addFlowNamespaceToVars = mapKeysOfObject(addFlowNamespaceToFirst);
+const getFlowVars = R.pathOr({}, ['context', 'flow', 'variables']);
+const qualifyFlowVars = R.pipe(
+  getFlowVars, addFlowNamespaceToVars
+);
+
+const addStepNamespace = R.concat('step.');
+const addStepNamespaceToFirst = makeMapFirstOfPairFn(addStepNamespace);
+const addStepNamespaceToVars = mapKeysOfObject(addStepNamespaceToFirst);
 
 const where = R.curry((field, row) => {
   return field.fieldWhereFn(row);
@@ -156,36 +177,13 @@ const addRowToTable = R.curry((accum, stepAndContext, idx) => {
     ['context', 'widgets', name],
     stepContext
   );
-
   const _stepVars = {
     name, idx, transitionedTo, startTime, endTime, duration, elapsed, result
   };
-
-  const addTriggerNamespace = R.concat('trigger.');
-  const addTriggerNamespaceToFirst = makeMapFirstOfPairFn(addTriggerNamespace);
-  const addTriggerNamespaceToVars = mapKeysOfObject(addTriggerNamespaceToFirst);
-  const getTriggerVars = R.pathOr({}, ['context', 'trigger', 'call']);
-  const namespaceTriggerVars = R.pipe(
-    getTriggerVars, addTriggerNamespaceToVars
-  );
   const triggerVars = (idx == 0)
-    ? namespaceTriggerVars(stepContext)
+    ? qualifyTriggerVars(stepContext)
     : {};
-
-  const addFlowNamespace = R.concat('flow.');
-  const addFlowNamespaceToFirst = makeMapFirstOfPairFn(addFlowNamespace);
-  const addFlowNamespaceToVars = mapKeysOfObject(addFlowNamespaceToFirst);
-  const getFlowVars = R.pathOr({}, ['context', 'flow', 'variables']);
-
-  // namespaceFlowVars :: context -> obj
-  const namespaceFlowVars = R.pipe(
-    getFlowVars, addFlowNamespaceToVars
-  );
-  const flowVars = namespaceFlowVars(stepContext);
-
-  const addStepNamespace = R.concat('step.');
-  const addStepNamespaceToFirst = makeMapFirstOfPairFn(addStepNamespace);
-  const addStepNamespaceToVars = mapKeysOfObject(addStepNamespaceToFirst);
+  const flowVars = qualifyFlowVars(stepContext);
   const stepVars = addStepNamespaceToVars(_stepVars);
 
   const row = {
@@ -194,6 +192,7 @@ const addRowToTable = R.curry((accum, stepAndContext, idx) => {
     ...flowVars,
     ...triggerVars
   };
+
   return {
     startTimeMSec,
     prevTimeMSec: endTimeMSec,
@@ -212,6 +211,7 @@ const makeStepTable = (execAndContext, steps) => {
 };
 
 const keyStartsWithStep = (_v, k) => R.test(/^step./, k);
+
 const reportRow = row => R.pickBy(keyStartsWithStep, row);
 
 const reportExecution = R.curry(
