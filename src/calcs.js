@@ -25,51 +25,27 @@ const dataToValueMapper = R.curry((map, defaultValue, value) => {
   return result;
 });
 
-//const ifFirstElseSecond = (first, second) => (first || second);
+const joinIfNotNull = R.curry((separator, first, second) => {
+  if (first && second)
+    return `${first}${separator}${second}`;
+  else if (first)
+    return first;
+  else
+    return second;
+});
 
 const aggMapper = {
   sum: R.add,
   count: R.inc,
   max: Math.max,
-  last: R.nthArg(2),
+  last: R.defaultTo,
   first: R.flip(R.defaultTo),
-  path: R.pipe(R.pair, R.join('__'))
+  path: joinIfNotNull('__')
 };
 
 const valueAggregator = R.curry((agg, accum, value) => {
-  let result;
-  if (accum == null) {
-    if (['sum', 'unique', 'elapsed'].includes(agg))
-      result = 0;
-    // NOTE: the else clause may not be needed bcos other aggs are assignments
-    else
-      if (typeof value === 'number')
-        result = 0;
-      else
-        result = '';
-  }
-  else
-    result = accum;
-
   const aggFn = aggMapper[agg];
-  //return aggFn(result, value)
-  switch (agg) {
-    case 'sum':
-      return (result + value);
-    case 'count':
-      return (result + 1);
-    case 'max':
-      return Math.max(result, value);
-    case 'first':
-      return result || value;
-    case 'last':
-      return value;
-    case 'path':
-      return `${result}:${value}`;
-    default:
-      console.log(`${agg} is an unsupported agg function!`);
-      return value;
-  }
+  return aggFn(accum, value)
 });
 
 const calculateValue = R.curry((stepTable, field) => {
@@ -174,5 +150,6 @@ module.exports = {
   makeFilePath,
   makeStepTable,
   makeSummaryText,
-  reportRow
+  reportRow,
+  valueAggregator
 };
