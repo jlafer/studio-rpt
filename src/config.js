@@ -92,6 +92,7 @@ const fillOutConfig = (stdSummFlds, stdStepFlds, rawCfg) => {
 };
 
 module.exports = {
+  addWhereFn,
   fillOutConfig,
   makeSummHeader,
   stdStepFlds,

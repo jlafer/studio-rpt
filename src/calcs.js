@@ -151,5 +151,6 @@ module.exports = {
   makeStepTable,
   makeSummaryText,
   reportRow,
-  valueAggregator
+  valueAggregator,
+  where
 };
