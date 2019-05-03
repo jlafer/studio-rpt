@@ -2,7 +2,6 @@
   This module supports the 'report' command of the 'studiorpt' CLI program.
 
   TODO
-  - add test suite
   - convert switch statements to objects
   - support select of a constant (1)
   - move utility functions out
@@ -16,9 +15,7 @@ const R = require('ramda');
 const helpers = require('@jlafer/twilio-helpers');
 const {readJsonFile} = require('jlafer-node-util');
 const error = require('../src/error');
-const {log, makeMapFirstOfPairFn, mapKeysOfObject, valueNotObject,
-  valueIsObject, valueIsArray, isNotNil, isNotEquals,
-  openStream, writeToStream, closeStream}
+const {log, openStream, writeToStream, closeStream}
 = require('../src/temputil');
 const {fillOutConfig} = require('../src/config');
 const {addStepNamespaceToVars, qualifyFlowVars, qualifyTriggerVars}
@@ -34,9 +31,7 @@ const stdStepFlds = [
   'elapsed', 'result'
 ];
 
-const where = R.curry((field, row) => {
-  return field.fieldWhereFn(row);
-});
+const where = R.curry((field, row) => field.fieldWhereFn(row));
 
 const dataGetter = R.curry((dataSpec, row) => {
   if (Array.isArray(dataSpec))
@@ -57,6 +52,17 @@ const dataToValueMapper = R.curry((map, defaultValue, value) => {
   return result;
 });
 
+  //const ifFirstElseSecond = (first, second) => (first || second);
+
+  const aggMapper = {
+  sum: R.add,
+  count: R.inc,
+  max: Math.max,
+  last: R.nthArg(2),
+  first: R.flip(R.defaultTo),
+  path: R.pipe(R.pair, R.join('__'))
+};
+
 const valueAggregator = R.curry((agg, accum, value) => {
   let result;
   if (accum == null) {
@@ -71,6 +77,9 @@ const valueAggregator = R.curry((agg, accum, value) => {
   }
   else
     result = accum;
+
+  const aggFn = aggMapper(agg);
+  //return aggFn(result, value)
   switch (agg) {
     case 'sum':
       return (result + value);
