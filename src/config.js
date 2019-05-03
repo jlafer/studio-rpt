@@ -3,6 +3,16 @@ const {addStepNamespace} = require('./functions');
 const {valueNotObject, valueIsObject, valueIsArray, isNotNil, isNotEquals}
 = require('../src/temputil');
 
+const stdSummFlds = [
+  'sid', 'accountSid', 'appName', 'appVersion', 'startTime', 'endTime',
+  'lastStep', 'callSid', 'from', 'to'
+];
+
+const stdStepFlds = [
+  'sid', 'name', 'idx', 'transitionedTo', 'startTime', 'endTime', 'duration',
+  'elapsed', 'result'
+];
+
 const kvToOpsPred = (whereOpsObj) => {
   const operatorPairs = R.toPairs(whereOpsObj);
   if (operatorPairs.length == 0)
@@ -83,5 +93,7 @@ const fillOutConfig = (stdSummFlds, stdStepFlds, rawCfg) => {
 
 module.exports = {
   fillOutConfig,
-  makeSummHeader
+  makeSummHeader,
+  stdStepFlds,
+  stdSummFlds
 }
