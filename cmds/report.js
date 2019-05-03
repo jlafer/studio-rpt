@@ -2,8 +2,6 @@
   This module supports the 'report' command of the 'studiorpt' CLI program.
 
   TODO
-  - add detail report
-  - change output to .csv format
   - add test suite
   - convert switch statements to objects
   - support select of a constant (1)
@@ -12,13 +10,14 @@
   - add timezone support for output
 */
 
+const fs = require('fs');
 const ora = require('ora');
 const error = require('../src/error');
 const helpers = require('@jlafer/twilio-helpers');
 const {readJsonFile} = require('jlafer-node-util');
 const {log, makeMapFirstOfPairFn, mapKeysOfObject, valueNotObject,
   valueIsObject, valueIsArray, isNotNil, isNotEquals,
-  openFile, writeToFile, closeFile}
+  openStream, writeToStream, closeStream}
 = require('../src/temputil');
 const R = require('ramda');
 
@@ -28,7 +27,7 @@ const stdSummFlds = [
 ];
 
 const stdStepFlds = [
-  'name', 'idx', 'transitionedTo', 'startTime', 'endTime', 'duration',
+  'sid', 'name', 'idx', 'transitionedTo', 'startTime', 'endTime', 'duration',
   'elapsed', 'result'
 ];
 
@@ -288,11 +287,13 @@ const fillOutConfig = (stdSummFlds, stdStepFlds, rawCfg) => {
   const fieldsWithFns = fields.map(addWhereFn);
   const summHeader = makeSummHeader(stdSummFlds, fields);
   const dtlHeader = [...stdStepFlds];
+  const dtlHeaderQualified = dtlHeader.map(addStepNamespace);
   return {
     ...rest,
     fields: fieldsWithFns,
     summHeader,
-    dtlHeader
+    dtlHeader,
+    dtlHeaderQualified
   };
 };
 
@@ -305,13 +306,19 @@ const makeSummaryText = (cfg, execRpt) => {
   return propsToDelimitedString(execRpt);
 };
 
-const makeDetailText = (cfg, execRpt) => {
+const makeDetailRcds = (cfg, execRpt) => {
   const propsToDelimitedString = R.pipe(
-    R.props(cfg.dtlHeader),
+    R.props(cfg.dtlHeaderQualified),
     R.join(cfg.delimiter),
     s => s + '\n'
   );
   return execRpt.stepRpts.map(propsToDelimitedString);
+};
+
+const writeDetailRcds = (fd, rcds) => {
+  rcds.forEach(rcd => {
+    writeToStream(fd, rcd);
+  });
 };
 
 const makeFilePath = (outDir, fromDt, toDt, type, flow) => {
@@ -328,28 +335,27 @@ module.exports = async (args) => {
   const cfg = fillOutConfig(stdSummFlds, stdStepFlds, rawCfg);
   const flow = await helpers.getWorkflow(client, flowSid);
   const summPath = makeFilePath(outDir, fromDt, toDt, 'summary', flow);
-  const summFD = await openFile(summPath, 'w');
+  const summFD = openStream(summPath);
   const dtlPath = makeFilePath(outDir, fromDt, toDt, 'detail', flow);
-  const dtlFD = await openFile(dtlPath, 'w');
-  await writeToFile (summFD, cfg.summHeader.join(cfg.delimiter)+'\n');
-  await writeToFile (dtlFD, cfg.dtlHeader.join(cfg.delimiter)+'\n');
+  const dtlFD = openStream(dtlPath);
+  writeToStream(summFD, cfg.summHeader.join(cfg.delimiter)+'\n');
+  writeToStream(dtlFD, cfg.dtlHeader.join(cfg.delimiter)+'\n');
   helpers.getExecutions(client, flowSid, fromDt, toDt)
   .then(execs =>
     Promise.all(execs.map(reportExecution(client, flow, cfg)))
   )
-  .then((execRpts) => {
+  .then(async (execRpts) => {
     spinner.stop();
     execRpts.forEach(async execRpt => {
       let summText = makeSummaryText(cfg, execRpt);
-      await writeToFile(summFD, summText);
-      let dtlText = makeDetailText(cfg, execRpt);
-      console.log(`writing dtlText: ${dtlText}`);
-      await writeToFile(dtlFD, dtlText);
+      writeToStream(summFD, summText);
+      let dtlRcds = makeDetailRcds(cfg, execRpt);
+      writeDetailRcds(dtlFD, dtlRcds);
     });
   })
-  .then(() => {
-    closeFile(summFD);
-    closeFile(dtlFD);
+  .then(async () => {
+    closeStream(summFD);
+    closeStream(dtlFD);
   })
   .catch(err => {
     spinner.stop();

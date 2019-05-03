@@ -61,6 +61,18 @@ const closeFile = (fd) => {
   });
 };
 
+const openStream = (path) => {
+  return fs.createWriteStream(path);
+};
+
+const writeToStream = (stream, text) => {
+  stream.write(text);
+};
+
+const closeStream = (stream) => {
+  stream.end();
+};
+
 module.exports = {
   log,
   makeMapFirstOfPairFn,
@@ -70,7 +82,7 @@ module.exports = {
   valueIsArray,
   isNotNil,
   isNotEquals,
-  openFile,
-  writeToFile,
-  closeFile
+  openStream,
+  writeToStream,
+  closeStream
 };
