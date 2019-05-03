@@ -27,7 +27,7 @@ const stdSummFlds = [
   'lastStep', 'callSid', 'from', 'to'
 ];
 
-const stdDtlFlds = [
+const stdStepFlds = [
   'name', 'idx', 'transitionedTo', 'startTime', 'endTime', 'duration',
   'elapsed', 'result'
 ];
@@ -169,8 +169,8 @@ const logTable = (table) => {
   table.rows.forEach(row => {console.log('row:', row);});
 };
 
-const addRowToTable = R.curry((accum, stepAndContext, idx) => {
-  const {startTimeMSec, prevTimeMSec, rows} = accum;
+const addRowToTable = (accum, stepAndContext, idx) => {
+  const {sid, startTimeMSec, prevTimeMSec, rows} = accum;
   const {step, context: stepContext} = stepAndContext;
   const {
     transitionedFrom: name, transitionedTo, name: result,
@@ -198,6 +198,7 @@ const addRowToTable = R.curry((accum, stepAndContext, idx) => {
   const stepVars = addStepNamespaceToVars(_stepVars);
 
   const row = {
+    'step.sid': sid,
     ...stepVars,
     ...widgetVars,
     ...flowVars,
@@ -205,19 +206,22 @@ const addRowToTable = R.curry((accum, stepAndContext, idx) => {
   };
 
   return {
+    sid,
     startTimeMSec,
     prevTimeMSec: endTimeMSec,
     stepCnt: idx,   // don't count the trigger "widget"
     rows: [...rows, row]};
-});
+};
 
 const makeStepTable = (execAndContext, steps) => {
   const {execution} = execAndContext;
   const {dateCreated} = execution;
   const startDt = new Date(dateCreated);
   const startTimeMSec = startDt.getTime();
-  const accum = {startTimeMSec, prevTimeMSec: startTimeMSec, rows: []};
-  const table = R.reverse(steps).reduce(addRowToTable(), accum);
+  const accum = {
+    sid: execution.sid, startTimeMSec, prevTimeMSec: startTimeMSec, rows: []
+  };
+  const table = R.reverse(steps).reduce(addRowToTable, accum);
   return table;
 };
 
@@ -233,7 +237,7 @@ const reportExecution = R.curry(
   const {sid, accountSid, dateCreated, dateUpdated} = execution;
   const steps = await helpers.getSteps(client, flow.sid, execution.sid);
   const stepTable = makeStepTable(execAndContext, steps);
-  //logTable(stepTable);
+  logTable(stepTable);
   const stepRpts = stepTable.rows.map(reportRow);
   const lastStep = R.last(stepRpts)['step.name'];
   const customFlds = cfgWithFns.fields.map(calculateValue(stepTable));
@@ -275,36 +279,43 @@ const addWhereFn = (field) => {
   return {...field, fieldWhereFn}
 };
 
-const writeCsvHeader = (cfg, fd) => {
-  const header = cfg.header.join(cfg.delimiter);
-  fs.appendFile(fd, header, (err) => {
-    if (err) throw err;
-
-  })
-};
-
-const makeHeader = (stdSummFlds, fields) => {
+const makeSummHeader = (stdSummFlds, fields) => {
   return [...stdSummFlds, ...fields.map(R.prop('name'))];
 };
 
-const fillOutConfig = (stdSummFlds, rawCfg) => {
+const fillOutConfig = (stdSummFlds, stdStepFlds, rawCfg) => {
   const {fields, ...rest} = rawCfg;
-
   const fieldsWithFns = fields.map(addWhereFn);
-  const summHeader = makeHeader(stdSummFlds, fields);
+  const summHeader = makeSummHeader(stdSummFlds, fields);
+  const dtlHeader = [...stdStepFlds];
   return {
     ...rest,
     fields: fieldsWithFns,
-    summHeader
+    summHeader,
+    dtlHeader
   };
 };
 
 const makeSummaryText = (cfg, execRpt) => {
   const propsToDelimitedString = R.pipe(
     R.props(cfg.summHeader),
-    R.join(cfg.delimiter)
+    R.join(cfg.delimiter),
+    s => s + '\n'
   );
   return propsToDelimitedString(execRpt);
+};
+
+const makeDetailText = (cfg, execRpt) => {
+  const propsToDelimitedString = R.pipe(
+    R.props(cfg.dtlHeader),
+    R.join(cfg.delimiter),
+    s => s + '\n'
+  );
+  return execRpt.stepRpts.map(propsToDelimitedString);
+};
+
+const makeFilePath = (outDir, fromDt, toDt, type, flow) => {
+  return `${outDir}/${flow.sid}_${flow.version}_${type}_${fromDt}_${toDt}.csv`;
 };
 
 module.exports = async (args) => {
@@ -314,11 +325,14 @@ module.exports = async (args) => {
   const client = require('twilio')(acct, auth);
 
   const rawCfg = await readJsonFile(cfgPath);
-  const cfg = fillOutConfig(stdSummFlds, rawCfg);
+  const cfg = fillOutConfig(stdSummFlds, stdStepFlds, rawCfg);
   const flow = await helpers.getWorkflow(client, flowSid);
-  const summPath = `${outDir}/${flow.sid}_${flow.version}_summary_${fromDt}_${toDt}.csv`;
+  const summPath = makeFilePath(outDir, fromDt, toDt, 'summary', flow);
   const summFD = await openFile(summPath, 'w');
+  const dtlPath = makeFilePath(outDir, fromDt, toDt, 'detail', flow);
+  const dtlFD = await openFile(dtlPath, 'w');
   await writeToFile (summFD, cfg.summHeader.join(cfg.delimiter)+'\n');
+  await writeToFile (dtlFD, cfg.dtlHeader.join(cfg.delimiter)+'\n');
   helpers.getExecutions(client, flowSid, fromDt, toDt)
   .then(execs =>
     Promise.all(execs.map(reportExecution(client, flow, cfg)))
@@ -327,11 +341,15 @@ module.exports = async (args) => {
     spinner.stop();
     execRpts.forEach(async execRpt => {
       let summText = makeSummaryText(cfg, execRpt);
-      await writeToFile(summFD, summText+'\n');
+      await writeToFile(summFD, summText);
+      let dtlText = makeDetailText(cfg, execRpt);
+      console.log(`writing dtlText: ${dtlText}`);
+      await writeToFile(dtlFD, dtlText);
     });
   })
   .then(() => {
     closeFile(summFD);
+    closeFile(dtlFD);
   })
   .catch(err => {
     spinner.stop();
