@@ -145,6 +145,8 @@ const makeFilePath = (outDir, fromDt, toDt, type, flow) => {
 
 module.exports = {
   calculateValue,
+  dataGetter,
+  dataToValueMapper,
   logTable,
   makeDetailRcds,
   makeFilePath,
