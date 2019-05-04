@@ -13,6 +13,9 @@ const stdStepFlds = [
   'elapsed', 'result'
 ];
 
+const operatorToFnMap = {
+};
+
 const kvToOpsPred = (whereOpsObj) => {
   const operatorPairs = R.toPairs(whereOpsObj);
   if (operatorPairs.length == 0)

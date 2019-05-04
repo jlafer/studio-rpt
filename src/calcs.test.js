@@ -1,4 +1,32 @@
-const {valueAggregator} = require('./calcs');
+const R = require('ramda');
+const {transformExecutionData, valueAggregator} = require('./calcs');
+const {stdSteps, stdFlow, stdCfg, stdExecAndContext} = require('./test-helpers');
+
+// transformExecutionData tests
+test("transformExecutionData performs", () => {
+  const actual = transformExecutionData(stdFlow, stdCfg, stdExecAndContext, stdSteps);
+  const {sid, accountSid, dateCreated} = stdExecAndContext.execution;
+  //expect(actual).toEqual({foo: 'bar'});
+  expect(actual.sid).toEqual(sid);
+  expect(actual.accountSid).toEqual(accountSid);
+  expect(actual.callSid).toEqual('CAxxxx');
+  expect(actual.startTime).toEqual(dateCreated);
+  expect(actual.from).toEqual('+12088747271');
+  expect(actual.to).toEqual('+15551112222');
+  expect(actual.aa).toEqual(11000);
+  expect(actual.bb).toEqual(0);
+  expect(actual.lastStep).toEqual('ddd');
+  expect(actual.stepRpts).toHaveLength(5);
+  expect(actual.stepRpts[0]['step.idx']).toEqual(0);
+  expect(actual.stepRpts[0]['step.name']).toEqual('Trigger');
+  const step4 = actual.stepRpts[4];
+  expect(step4['step.idx']).toEqual(4);
+  expect(step4['step.name']).toEqual('ddd');
+  expect(step4['step.duration']).toEqual(1000);
+  expect(step4['step.elapsed']).toEqual(11000);
+  expect(step4['step.result']).toEqual('audioComplete');
+  expect(step4['step.transitionedTo']).toEqual('Ended');
+});
 
 // valueAggregator tests
 test("valueAggregator performs sum when accum is null", () => {
