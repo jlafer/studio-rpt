@@ -1,16 +1,19 @@
 const R = require('ramda');
 const {addStepNamespaceToVars, qualifyFlowVars, qualifyTriggerVars}
 = require('./functions');
+const {pickNamesAndValues} = require('./temputil');
 
-const reportRow = row => R.pickBy(keyStartsWithStep, row);
+const keyStartsWithStep = (_v, k) => R.test(/^step./, k);
+
+const rowToStepRptRcd = row => R.pickBy(keyStartsWithStep, row);
 
 const where = R.curry((field, row) => field.fieldWhereFn(row));
 
 const dataGetter = R.curry((dataSpec, row) => {
-  if (Array.isArray(dataSpec))
-    return R.path(dataSpec, row);
   if (typeof dataSpec === 'string')
     return R.prop(dataSpec, row);
+  if (Array.isArray(dataSpec))
+    return R.path(dataSpec, row);
   if (typeof dataSpec === 'number')
     return dataSpec;
   console.log(`${dataSpec} is an unsupported data spec!`);
@@ -34,7 +37,7 @@ const joinIfNotNull = R.curry((separator, first, second) => {
     return second;
 });
 
-const aggMapper = {
+const aggFnMap = {
   sum: R.add,
   count: R.inc,
   max: Math.max,
@@ -44,7 +47,7 @@ const aggMapper = {
 };
 
 const valueAggregator = R.curry((agg, accum, value) => {
-  const aggFn = aggMapper[agg];
+  const aggFn = aggFnMap[agg];
   return aggFn(accum, value)
 });
 
@@ -119,8 +122,6 @@ const makeStepTable = (execAndContext, steps) => {
   return table;
 };
 
-const keyStartsWithStep = (_v, k) => R.test(/^step./, k);
-
 const makeSummaryText = (cfg, execRpt) => {
   const propsToDelimitedString = R.pipe(
     R.props(cfg.summHeader),
@@ -149,8 +150,7 @@ const transformExecutionData = (flow, cfgWithFns, execAndContext, steps) => {
   const {sid, accountSid, dateCreated, dateUpdated} = execution;
   const stepTable = makeStepTable(execAndContext, steps);
   //logTable(stepTable);
-  const stepRpts = stepTable.rows.map(reportRow);
-  const lastStep = R.last(stepRpts)['step.name'];
+  const lastStep = R.last(stepTable.rows)['step.name'];
   const customFlds = cfgWithFns.fields.map(calculateValue(stepTable));
   const call = context.context.trigger.call;
   const callProps = {};
@@ -160,21 +160,15 @@ const transformExecutionData = (flow, cfgWithFns, execAndContext, steps) => {
     callProps.from = From;
     callProps.to = To;
   };
-  const rpt = {
-    sid,
-    accountSid,
-    appName: friendlyName,
-    appVersion: version,
-    startTime: dateCreated,
-    endTime: dateUpdated,
-    lastStep,
+  const stepRpts = stepTable.rows.map(rowToStepRptRcd);
+  const customValues = pickNamesAndValues(customFlds);
+  return {
+    sid, accountSid, appName: friendlyName, appVersion: version,
+    startTime: dateCreated, endTime: dateUpdated, lastStep,
     ...callProps,
+    ...customValues,
     stepRpts
   };
-  customFlds.forEach(fld => {
-    rpt[fld.name] = fld.value;
-  });
-  return rpt;
 };
 
 module.exports = {
@@ -186,7 +180,7 @@ module.exports = {
   makeFilePath,
   makeStepTable,
   makeSummaryText,
-  reportRow,
+  rowToStepRptRcd,
   transformExecutionData,
   valueAggregator,
   where

@@ -15,6 +15,12 @@ const mapKeysOfObject = mapFirstOfPairFn => R.pipe(
   R.toPairs, R.map(mapFirstOfPairFn), R.fromPairs
 );
 
+// pickNamesAndValues :: [object] -> object
+const pickNamesAndValues = R.pipe(
+  R.map(R.props(['name','value'])),
+  R.fromPairs
+);
+
 const valueNotObject = value => (typeof value !== 'object');
 const valueIsObject = value =>
   (typeof value === 'object' && ! Array.isArray(value));
@@ -83,6 +89,7 @@ module.exports = {
   log,
   makeMapFirstOfPairFn,
   mapKeysOfObject,
+  pickNamesAndValues,
   valueNotObject,
   valueIsObject,
   valueIsArray,

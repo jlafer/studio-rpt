@@ -1,4 +1,5 @@
 {
+  "delimiter":",",
   "fields":[
     {
       "name":"centerStatus",
@@ -45,7 +46,7 @@
       "default":0
     },
     {
-      "name":"functionCallTime",
+      "name":"functionCallCnt",
       "where":[
         {"status_code":{"not":"null"}}
       ],
