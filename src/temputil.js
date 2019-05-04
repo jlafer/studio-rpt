@@ -65,6 +65,12 @@ const openStream = (path) => {
   return fs.createWriteStream(path);
 };
 
+const writeRcdsToStream = (stream, rcds) => {
+  rcds.forEach(rcd => {
+    writeToStream(stream, rcd);
+  });
+};
+
 const writeToStream = (stream, text) => {
   stream.write(text);
 };
@@ -84,5 +90,6 @@ module.exports = {
   isNotEquals,
   openStream,
   writeToStream,
+  writeRcdsToStream,
   closeStream
 };

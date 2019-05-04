@@ -20,6 +20,12 @@ test("dataGetter returns value when a 'widget' variable is selected", () => {
 test("dataGetter returns value when a 'flow' variable is selected", () => {
   expect(dataGetter('flow.language', row)).toEqual('French');
 });
+test("dataGetter returns 1 when a 1 is selected", () => {
+  expect(dataGetter(1, row)).toEqual(1);
+});
+test("dataGetter returns constant value when a number is selected", () => {
+  expect(dataGetter(42, row)).toEqual(42);
+});
 // 'dataToValueMapper' tests
 test("dataToValueMapper returns value when supplied", () => {
   expect(dataToValueMapper('identity', 'default', 'value')).toEqual('value');

@@ -11,8 +11,8 @@ const dataGetter = R.curry((dataSpec, row) => {
     return R.path(dataSpec, row);
   if (typeof dataSpec === 'string')
     return R.prop(dataSpec, row);
-  if (typeof dataSpec === 'number' && dataSpec == 1)
-    return 1;
+  if (typeof dataSpec === 'number')
+    return dataSpec;
   console.log(`${dataSpec} is an unsupported data spec!`);
   return 0;
 });
@@ -143,6 +143,40 @@ const makeFilePath = (outDir, fromDt, toDt, type, flow) => {
   return `${outDir}/${flow.sid}_${flow.version}_${type}_${fromDt}_${toDt}.csv`;
 };
 
+const transformExecutionData = (flow, cfgWithFns, execAndContext, steps) => {
+  const {friendlyName, version} = flow;
+  const {execution, context} = execAndContext;
+  const {sid, accountSid, dateCreated, dateUpdated} = execution;
+  const stepTable = makeStepTable(execAndContext, steps);
+  //logTable(stepTable);
+  const stepRpts = stepTable.rows.map(reportRow);
+  const lastStep = R.last(stepRpts)['step.name'];
+  const customFlds = cfgWithFns.fields.map(calculateValue(stepTable));
+  const call = context.context.trigger.call;
+  const callProps = {};
+  if (call) {
+    const {CallSid, From, To} = call;
+    callProps.callSid = CallSid;
+    callProps.from = From;
+    callProps.to = To;
+  };
+  const rpt = {
+    sid,
+    accountSid,
+    appName: friendlyName,
+    appVersion: version,
+    startTime: dateCreated,
+    endTime: dateUpdated,
+    lastStep,
+    ...callProps,
+    stepRpts
+  };
+  customFlds.forEach(fld => {
+    rpt[fld.name] = fld.value;
+  });
+  return rpt;
+};
+
 module.exports = {
   calculateValue,
   dataGetter,
@@ -153,6 +187,7 @@ module.exports = {
   makeStepTable,
   makeSummaryText,
   reportRow,
+  transformExecutionData,
   valueAggregator,
   where
 };

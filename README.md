@@ -51,7 +51,6 @@ File names take the following format:
 ## Report Data
 Each summary execution report provides the following fields:
 - sid - the execution SID
-- accountSid - the account SID
 - callSid - the call SID
 - appName - the Studio flow name
 - appVersion - the Studio flow version
@@ -60,11 +59,10 @@ Each summary execution report provides the following fields:
 - from - the phone number of the caller
 - to - the Twilio phone number dialed
 - lastStep - the name of the last widget executed
-- [custom flow fields]
+- [custom execution fields]
 
 Each detail report provides the following fields:
 - sid - the execution SID
-- accountSid - the account SID
 - name - the Studio widget name for this step
 - idx - the index (or sequence) number of the step in the order of execution
 - transitionedTo - the name of the widget in the following step
@@ -73,7 +71,7 @@ Each detail report provides the following fields:
 - duration - the time spent in the step, in mSec (currently rounded to one second)
 - elapsed - the elapsed time from the start of the flow execution through the end of this step, in mSec
 - result - the result reported by the Studio engine for this step
-- [custom step fields]
+- [custom step fields] (FUTURE)
 
 ## Known limitations
 - There is no data on flow config (e.g., DTMF-allowed on menu, timeout values).
@@ -85,7 +83,7 @@ Each detail report provides the following fields:
 Please let me know if there are other features that you would like to see in the program.
 
 ## Configuration
-Custom fields can be configured that are reported as fields in the summary execution report. Custom fields are specified in a `config.json` file, whose location is indicated with the --cfgPath command-line argument. A sample config file is located in the project folder (`sample-config.json`). The required file format is outlined below.
+Custom fields can be configured and included in the summary execution report. Custom fields are specified in a `config.json` file, whose location is indicated with the --cfgPath command-line argument. A sample config file is located in the project folder (`sample-config.json`). The required file format is outlined below.
 
 The report configuration file must follow this format:
 ```
@@ -94,7 +92,7 @@ The report configuration file must follow this format:
     {
       "name":"NAME",
       "where":[CLAUSE, ...],
-      "select":"VARNAME",
+      "select":SELECTION,
       "map":"FNAME",
       "agg":"AGGNAME",
       "default":VALUE
@@ -110,6 +108,7 @@ CLAUSE ::
 OPERATOR :: not || gt || lt
 OPERAND :: null || VALUE
 NAME :: <widget name>
+SELECTION :: VARNAME || VALUE
 VARNAME :: <var name> || step.<var name> || flow.<var name>
 VALUE :: string || integer
 FNAME :: identity
@@ -123,7 +122,7 @@ The step properties are listed above and are named like `step.name` or `step.idx
 
 The widget variables have no prefix and are listed below, under the heading of the Studio widget types for which they are populated.
 
-In addition there are a large number of flow variables that can be used, including the network property variables provided by Studio in the `Trigger` widget. These are also available as widget variables for some other widget types, including `Say/Play`. The `studiorpt list --type step` command can be useful for reviewing the variables that are available at each step of execution.
+In addition there are a large number of flow variables that can be used, including the network property variables provided by Studio in the `Trigger` widget. These are also available as widget variables for some other widget types, including `Say/Play`. The `studiorpt list --type step` command can be useful for reviewing the variables that are available at each step of an execution.
 
 ## Widget-specific Variable Data
 Below is a list of the widget variables that are present with widgets of the various types. [NOTE: this list is not comprehensive!]
@@ -146,4 +145,3 @@ Below is a list of the widget variables that are present with widgets of the var
 - content_type - the response content type (e.g., "application/json")
 - parsed - the parsed JSON data returned by the function, if the content\_type was `application/json`
 - body - the raw text data returned by the function, if the content\_type was `text/plain`
-
