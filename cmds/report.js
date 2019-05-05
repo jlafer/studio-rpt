@@ -3,7 +3,6 @@
 
   TODO
   - move utility functions out
-  - make detail report optional
   - allow for specifying batch size within time interval
   - create fnal util package
 */
@@ -28,7 +27,8 @@ const calculateExecutionData = R.curry(
 });
 
 module.exports = async (args) => {
-  const {acct, auth, flowSid, fromDt, toDt, cfgPath, outDir} = args;
+  const {acct, auth, detail, flowSid, fromDt, toDt, cfgPath, outDir} = args;
+  let dtlPath, stepStream;
   const spinner = ora().start();
   const client = require('twilio')(acct, auth);
   const flow = await helpers.getWorkflow(client, flowSid);
@@ -36,10 +36,12 @@ module.exports = async (args) => {
   const cfg = fillOutConfig(stdSummFlds, stdStepFlds, rawCfg);
   const summPath = makeFilePath(outDir, fromDt, toDt, 'summary', flow);
   const summStream = openStream(summPath);
-  const dtlPath = makeFilePath(outDir, fromDt, toDt, 'detail', flow);
-  const stepStream = openStream(dtlPath);
   writeToStream(summStream, cfg.summHeader.join(cfg.delimiter)+'\n');
-  writeToStream(stepStream, cfg.dtlHeader.join(cfg.delimiter)+'\n');
+  if (detail) {
+    dtlPath = makeFilePath(outDir, fromDt, toDt, 'detail', flow);
+    stepStream = openStream(dtlPath);
+    writeToStream(stepStream, cfg.dtlHeader.join(cfg.delimiter)+'\n');
+  }
   helpers.getExecutions(client, flowSid, fromDt, toDt)
   .then(execs => Promise.all(
     execs.map(calculateExecutionData(client, flow, cfg))
@@ -48,14 +50,17 @@ module.exports = async (args) => {
     spinner.stop();
     execRpts.forEach(execRpt => {
       let summText = cfg.summRcdToDelimitedString(execRpt);
-      let dtlRcds = execRpt.stepRpts.map(cfg.stepRcdToDelimitedString);
       writeToStream(summStream, summText);
-      writeRcdsToStream(stepStream, dtlRcds);
+      if (detail) {
+        let dtlRcds = execRpt.stepRpts.map(cfg.stepRcdToDelimitedString);
+        writeRcdsToStream(stepStream, dtlRcds);
+      }
     });
   })
   .then(() => {
     closeStream(summStream);
-    closeStream(stepStream);
+    if (detail)
+      closeStream(stepStream);
   })
   .catch(err => {
     spinner.stop();

@@ -126,14 +126,14 @@ const makeFilePath = (outDir, fromDt, toDt, type, flow) => {
   return `${outDir}/${flow.sid}_${flow.version}_${type}_${fromDt}_${toDt}.csv`;
 };
 
-const transformExecutionData = (flow, cfgWithFns, execAndContext, steps) => {
+const transformExecutionData = (flow, cfg, execAndContext, steps) => {
   const {friendlyName, version} = flow;
   const {execution, context} = execAndContext;
   const {sid, accountSid, dateCreated, dateUpdated} = execution;
   const stepTable = makeStepTable(execAndContext, steps);
   //logTable(stepTable);
   const lastStep = R.last(stepTable.rows)['step.name'];
-  const customFlds = cfgWithFns.fields.map(calculateValue(stepTable));
+  const customFlds = cfg.fields.map(calculateValue(stepTable));
   const call = context.context.trigger.call;
   const callProps = {};
   if (call) {

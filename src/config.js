@@ -46,7 +46,6 @@ const condToOpsPred = (condObj) => {
 const makeOpsPredObj = (whereOpsObj) => R.map(condToOpsPred, whereOpsObj);
 
 const listToInPred = (list) => R.flip(R.includes)(list);
-
 const makeInPredObj = (whereInObj) => R.map(listToInPred, whereInObj);
 
 // makeRowFilterFn :: clause -> predicate
