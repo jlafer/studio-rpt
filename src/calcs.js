@@ -122,24 +122,6 @@ const makeStepTable = (execAndContext, steps) => {
   return table;
 };
 
-const makeSummaryText = (cfg, execRpt) => {
-  const propsToDelimitedString = R.pipe(
-    R.props(cfg.summHeader),
-    R.join(cfg.delimiter),
-    s => s + '\n'
-  );
-  return propsToDelimitedString(execRpt);
-};
-
-const makeDetailRcds = (cfg, execRpt) => {
-  const propsToDelimitedString = R.pipe(
-    R.props(cfg.dtlHeaderQualified),
-    R.join(cfg.delimiter),
-    s => s + '\n'
-  );
-  return execRpt.stepRpts.map(propsToDelimitedString);
-};
-
 const makeFilePath = (outDir, fromDt, toDt, type, flow) => {
   return `${outDir}/${flow.sid}_${flow.version}_${type}_${fromDt}_${toDt}.csv`;
 };
@@ -176,10 +158,8 @@ module.exports = {
   dataGetter,
   dataToValueMapper,
   logTable,
-  makeDetailRcds,
   makeFilePath,
   makeStepTable,
-  makeSummaryText,
   rowToStepRptRcd,
   transformExecutionData,
   valueAggregator,

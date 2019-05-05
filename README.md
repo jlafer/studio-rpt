@@ -54,8 +54,8 @@ Each summary execution report provides the following fields:
 - callSid - the call SID
 - appName - the Studio flow name
 - appVersion - the Studio flow version
-- startTime - the starting timestamp of the execution, in ISO 8601 format (GMT)
-- endTime - the ending timestamp of the execution, in ISO 8601 format (GMT)
+- startTime - the starting timestamp of the execution, in ISO 8601 format using the timezone specified with --fromDt (or -F)
+- endTime - the ending timestamp of the execution, in ISO 8601 format
 - from - the phone number of the caller
 - to - the Twilio phone number dialed
 - lastStep - the name of the last widget executed

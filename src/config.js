@@ -90,12 +90,29 @@ const fillOutConfig = (stdSummFlds, stdStepFlds, rawCfg) => {
   const summHeader = makeSummHeader(stdSummFlds, fields);
   const dtlHeader = [...stdStepFlds];
   const dtlHeaderQualified = dtlHeader.map(addStepNamespace);
+
+  // summRcdToDelimitedString :: object -> string
+  const summRcdToDelimitedString = R.pipe(
+    R.props(summHeader),
+    R.join(rawCfg.delimiter),
+    s => s + '\n'
+  );
+
+  // stepRcdToDelimitedString :: object -> string
+  const stepRcdToDelimitedString = R.pipe(
+    R.props(dtlHeaderQualified),
+    R.join(rawCfg.delimiter),
+    s => s + '\n'
+  );
+
   return {
     ...rest,
     fields: fieldsWithFns,
     summHeader,
     dtlHeader,
-    dtlHeaderQualified
+    dtlHeaderQualified,
+    summRcdToDelimitedString,
+    stepRcdToDelimitedString
   };
 };
 

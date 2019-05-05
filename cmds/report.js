@@ -6,7 +6,6 @@
   - make detail report optional
   - allow for specifying batch size within time interval
   - create fnal util package
-  - add timezone support for output
 */
 
 const ora = require('ora');
@@ -14,8 +13,7 @@ const R = require('ramda');
 const helpers = require('@jlafer/twilio-helpers');
 const {readJsonFile} = require('jlafer-node-util');
 const error = require('../src/error');
-const {makeFilePath, makeDetailRcds, makeSummaryText, transformExecutionData}
-= require('../src/calcs');
+const {makeFilePath, transformExecutionData} = require('../src/calcs');
 const {log, openStream, writeRcdsToStream, writeToStream, closeStream}
 = require('../src/temputil');
 const {fillOutConfig, stdStepFlds, stdSummFlds} = require('../src/config');
@@ -49,8 +47,8 @@ module.exports = async (args) => {
   .then((execRpts) => {
     spinner.stop();
     execRpts.forEach(execRpt => {
-      let summText = makeSummaryText(cfg, execRpt);
-      let dtlRcds = makeDetailRcds(cfg, execRpt);
+      let summText = cfg.summRcdToDelimitedString(execRpt);
+      let dtlRcds = execRpt.stepRpts.map(cfg.stepRcdToDelimitedString);
       writeToStream(summStream, summText);
       writeRcdsToStream(stepStream, dtlRcds);
     });
