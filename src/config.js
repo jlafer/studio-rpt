@@ -13,12 +13,9 @@ const stdStepFlds = [
   'elapsed', 'result'
 ];
 
-// condToOpsPred :: {op: operand, ...} -> predicate
-const condToOpsPred = (condObj) => {
-  //console.log('condToOpsPred: condObj', condObj);
-  const operatorPairs = R.toPairs(condObj);
-  // for now, only use one op-operand pair
-  const [operator, operand] = operatorPairs[0];
+// testToPredicate :: [operator, operand] -> predicate
+const testToPredicate = (testPair) => {
+  const [operator, operand] = testPair;
   switch (operator) {
     case 'not':
       if (operand === 'null')
@@ -35,7 +32,17 @@ const condToOpsPred = (condObj) => {
   }
 };
 
-// makeOpsPred :: {var: {op: operand, ...}, ...} -> {var: predicate, ...}
+// condToOpsPred :: {op1: operand, ...} -> predicate
+const condToOpsPred = (condObj) => {
+  const opsPred = R.pipe(
+    R.toPairs,
+    R.map(testToPredicate),
+    R.allPass
+  );
+  return opsPred(condObj);
+};
+
+// makeOpsPred :: {var1: {op1: operand, op2: ...}, var2: ...} -> {var1: predicate, var2: ...}
 const makeOpsPredObj = (whereOpsObj) => R.map(condToOpsPred, whereOpsObj);
 
 const listToInPred = (list) => R.flip(R.includes)(list);
@@ -44,11 +51,9 @@ const makeInPredObj = (whereInObj) => R.map(listToInPred, whereInObj);
 
 // makeRowFilterFn :: clause -> predicate
 const makeRowFilterFn = clause => {
-  //console.log(`makeRowFilterFn: for clause:`, clause)
   const whereEqObj = R.filter(valueNotObject, clause);
   const whereOpsObj = R.filter(valueIsObject, clause);
   const whereOpsPredObj = makeOpsPredObj(whereOpsObj);
-  //console.log(`makeRowFilterFn: whereOpsPredObj:`, whereOpsPredObj)
   const whereInObj = R.filter(valueIsArray, clause);
   const whereInPredObj = makeInPredObj(whereInObj);
   const filterFn = R.allPass([

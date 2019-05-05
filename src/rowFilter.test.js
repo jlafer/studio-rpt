@@ -108,6 +108,20 @@ test("rowFilter returns true when a 'gt' clause passes", () => {
   const fieldWithFn = addWhereFn(field);
   expect(rowFilter(fieldWithFn, row)).toEqual(true);
 });
+test("rowFilter returns true when 'gt' and 'lt' clauses pass", () => {
+  const field = {...fieldBase, "where":[
+    {"step.duration":{"gt":4000,"lt":5001}}
+  ]};
+  const fieldWithFn = addWhereFn(field);
+  expect(rowFilter(fieldWithFn, row)).toEqual(true);
+});
+test("rowFilter returns false when 'gt' and 'lt' clauses fail", () => {
+  const field = {...fieldBase, "where":[
+    {"step.duration":{"gt":4000,"lt":4999}}
+  ]};
+  const fieldWithFn = addWhereFn(field);
+  expect(rowFilter(fieldWithFn, row)).toEqual(false);
+});
 test("rowFilter returns false when a 'gt' clause fails on equal", () => {
   const field = {...fieldBase, "where":[
     {"step.duration":{"gt":5000}}
