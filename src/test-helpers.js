@@ -120,7 +120,7 @@ const stdSteps = [
         widgets: {
           'aaa': {'vw1': 'val1', 'vw2': 'val2'},
           'bbb': {'vw3': 'val3','vw4': 'val4'},
-          'Digits': '3'
+          'ccc': {'Digits': '3'}
         },
         flow: {variables: {language: 'English'}},
         trigger: {call: {CallSid:'CAxxxx', To:'+15551112222', From:'+12088747271'}}

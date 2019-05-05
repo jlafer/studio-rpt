@@ -7,7 +7,7 @@ const keyStartsWithStep = (_v, k) => R.test(/^step./, k);
 
 const rowToStepRptRcd = row => R.pickBy(keyStartsWithStep, row);
 
-const where = R.curry((field, row) => field.fieldWhereFn(row));
+const rowFilter = R.curry((field, row) => field.fieldWhereFn(row));
 
 const dataGetter = R.curry((dataSpec, row) => {
   if (typeof dataSpec === 'string')
@@ -54,7 +54,7 @@ const valueAggregator = R.curry((agg, accum, value) => {
 const calculateValue = R.curry((stepTable, field) => {
   const {rows} = stepTable;
   //console.log('calculateValue: for field:', field);
-  const value = rows.filter(where(field))
+  const value = rows.filter(rowFilter(field))
     .map(dataGetter(field.select))
     .map(dataToValueMapper(field.map, field.default))
     .reduce(valueAggregator(field.agg), null);
@@ -183,5 +183,5 @@ module.exports = {
   rowToStepRptRcd,
   transformExecutionData,
   valueAggregator,
-  where
+  rowFilter
 };

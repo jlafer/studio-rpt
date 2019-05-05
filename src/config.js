@@ -13,13 +13,11 @@ const stdStepFlds = [
   'elapsed', 'result'
 ];
 
-const operatorToFnMap = {
-};
-
-const kvToOpsPred = (whereOpsObj) => {
-  const operatorPairs = R.toPairs(whereOpsObj);
-  if (operatorPairs.length == 0)
-    return R.T;
+// condToOpsPred :: {op: operand, ...} -> predicate
+const condToOpsPred = (condObj) => {
+  //console.log('condToOpsPred: condObj', condObj);
+  const operatorPairs = R.toPairs(condObj);
+  // for now, only use one op-operand pair
   const [operator, operand] = operatorPairs[0];
   switch (operator) {
     case 'not':
@@ -27,37 +25,39 @@ const kvToOpsPred = (whereOpsObj) => {
         return isNotNil;
       else
         return isNotEquals(operand);
-      case 'gt':
-        return R.lt(operand);
-      case 'lt':
-        return R.gt(operand);
-      default:
-        console.log(`${operator} is an unsupported filter operator!`);
-        return R.F;
-    }
+    case 'gt':
+      return R.lt(operand);
+    case 'lt':
+      return R.gt(operand);
+    default:
+      console.log(`${operator} is an unsupported filter operator!`);
+      return R.F;
+  }
 };
 
-const makeOpsPred = whereOpsObj =>
-  R.map(kvToOpsPred, whereOpsObj);
+// makeOpsPred :: {var: {op: operand, ...}, ...} -> {var: predicate, ...}
+const makeOpsPredObj = (whereOpsObj) => R.map(condToOpsPred, whereOpsObj);
 
-const listToInPred = list => R.flip(R.includes)(list);
+const listToInPred = (list) => R.flip(R.includes)(list);
 
-const makeInPred = (whereInObj) => R.map(listToInPred, whereInObj);
+const makeInPredObj = (whereInObj) => R.map(listToInPred, whereInObj);
 
+// makeRowFilterFn :: clause -> predicate
 const makeRowFilterFn = clause => {
   //console.log(`makeRowFilterFn: for clause:`, clause)
   const whereEqObj = R.filter(valueNotObject, clause);
   const whereOpsObj = R.filter(valueIsObject, clause);
-  const whereOpsPredObj = makeOpsPred(whereOpsObj);
+  const whereOpsPredObj = makeOpsPredObj(whereOpsObj);
+  //console.log(`makeRowFilterFn: whereOpsPredObj:`, whereOpsPredObj)
   const whereInObj = R.filter(valueIsArray, clause);
-  const whereInPredObj = makeInPred(whereInObj);
+  const whereInPredObj = makeInPredObj(whereInObj);
   const filterFn = R.allPass([
     R.whereEq(whereEqObj),
     R.where(whereOpsPredObj),
     R.where(whereInPredObj)
   ]);
   return (row) => {
-    //console.log(`filtering row ${row['step.name']}`)
+    //console.log(`filtering row `, row);
     return filterFn(row);
   };
 }

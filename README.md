@@ -115,6 +115,8 @@ FNAME :: identity
 AGGNAME :: first || last || sum || count || max || path
 ```
 
+Note: When multiple `where` clauses are specified their evaluation results are combined with an implied logical-or operation. When multiple conditions are included within a single `where` clause, their evaluation results are combined with an implied logical-and operation.
+
 ## Variable Data
 When specifying source data in the config file for the purpose of creating custom fields, widget and step variables are available for use in the `filters` clause and `select` properties.
 

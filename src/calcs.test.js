@@ -14,7 +14,7 @@ test("transformExecutionData performs", () => {
   expect(actual.from).toEqual('+12088747271');
   expect(actual.to).toEqual('+15551112222');
   expect(actual.aa).toEqual(11000);
-  expect(actual.bb).toEqual(0);
+  expect(actual.bb).toEqual(1);
   expect(actual.lastStep).toEqual('ddd');
   expect(actual.stepRpts).toHaveLength(5);
   expect(actual.stepRpts[0]['step.idx']).toEqual(0);
