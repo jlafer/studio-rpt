@@ -88,6 +88,7 @@ Custom fields can be configured and included in the summary execution report. Cu
 The report configuration file must follow this format:
 ```
 {
+  "delimiter":DELIMITER,
   "fields":[
     {
       "name":"NAME",
@@ -101,6 +102,7 @@ The report configuration file must follow this format:
   ]
 }
 
+DELIMITER :: ',' || '\t'
 CLAUSE ::
   {"VARNAME":VALUE}
   || {"VARNAME":[VALUE, ...]}
