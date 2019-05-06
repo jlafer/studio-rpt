@@ -95,6 +95,8 @@ module.exports = {
   valueIsArray,
   isNotNil,
   isNotEquals,
+  openFile,
+  writeToFile,
   openStream,
   writeToStream,
   writeRcdsToStream,

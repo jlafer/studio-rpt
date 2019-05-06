@@ -15,7 +15,7 @@
   "author": "jlafer",
   "license": "MIT",
   "dependencies": {
-    "@jlafer/twilio-helpers": "^1.0.1",
+    "@jlafer/twilio-helpers": "^1.0.2",
     "commander": "^2.19.0",
     "dotenv": "^7.0.0",
     "jest": "^24.7.1",

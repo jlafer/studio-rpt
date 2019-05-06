@@ -3,7 +3,6 @@
 
   TODO
   - move utility functions out
-  - allow for specifying batch size within time interval
   - create fnal util package
 */
 
@@ -26,45 +25,59 @@ const calculateExecutionData = R.curry(
   return transformExecutionData(flow, cfgWithFns, execAndContext, steps);
 });
 
+const writeData = (execRpts, cfg, summStream, stepStream) => {
+  execRpts.forEach(execRpt => {
+    let summText = cfg.summRcdToDelimitedString(execRpt);
+    writeToStream(summStream, summText);
+    if (stepStream) {
+      let dtlRcds = execRpt.stepRpts.map(cfg.stepRcdToDelimitedString);
+      writeRcdsToStream(stepStream, dtlRcds);
+    }
+  });
+};
+
 module.exports = async (args) => {
   const {acct, auth, detail, flowSid, fromDt, toDt, cfgPath, outDir} = args;
   let dtlPath, stepStream;
-  const spinner = ora().start();
-  const client = require('twilio')(acct, auth);
-  const flow = await helpers.getWorkflow(client, flowSid);
-  const rawCfg = await readJsonFile(cfgPath);
-  const cfg = fillOutConfig(stdSummFlds, stdStepFlds, rawCfg);
-  const summPath = makeFilePath(outDir, fromDt, toDt, 'summary', flow);
-  const summStream = openStream(summPath);
-  writeToStream(summStream, cfg.summHeader.join(cfg.delimiter)+'\n');
-  if (detail) {
-    dtlPath = makeFilePath(outDir, fromDt, toDt, 'detail', flow);
-    stepStream = openStream(dtlPath);
-    writeToStream(stepStream, cfg.dtlHeader.join(cfg.delimiter)+'\n');
-  }
-  helpers.getExecutions(client, flowSid, fromDt, toDt)
-  .then(execs => Promise.all(
-    execs.map(calculateExecutionData(client, flow, cfg))
-  ))
-  .then((execRpts) => {
+  try {
+    const spinner = ora().start();
+    const client = require('twilio')(acct, auth);
+    const flow = await helpers.getWorkflow(client, flowSid);
+    const rawCfg = await readJsonFile(cfgPath);
+    const cfg = fillOutConfig(stdSummFlds, stdStepFlds, rawCfg);
+    const summPath = makeFilePath(outDir, fromDt, toDt, 'summary', flow);
+    const summStream = openStream(summPath);
+    writeToStream(summStream, cfg.summHeader.join(cfg.delimiter)+'\n');
+    if (detail) {
+      dtlPath = makeFilePath(outDir, fromDt, toDt, 'detail', flow);
+      stepStream = openStream(dtlPath);
+      writeToStream(stepStream, cfg.dtlHeader.join(cfg.delimiter)+'\n');
+    }
+    const firstPage = await helpers.getExecutionsPage(
+      client, flowSid, {dateCreatedFrom: fromDt, dateCreatedTo: toDt, pageSize: 10}
+    );
+    let {nextPageUrl, execContexts} = firstPage;
+    const firstPageData = await Promise.all(
+      execContexts.map(calculateExecutionData(client, flow, cfg))
+    )
+    writeData(firstPageData, cfg, summStream, stepStream);
+    while (nextPageUrl) {
+      let nextPage = await helpers.getExecutionsPage(client, flowSid, nextPageUrl);
+      execContexts = nextPage.execContexts;
+      let nextPageData = await Promise.all(
+        execContexts.map(calculateExecutionData(client, flow, cfg))
+      )
+      writeData(nextPageData, cfg, summStream, stepStream);
+      nextPageUrl = nextPage.nextPageUrl;
+    }
     spinner.stop();
-    execRpts.forEach(execRpt => {
-      let summText = cfg.summRcdToDelimitedString(execRpt);
-      writeToStream(summStream, summText);
-      if (detail) {
-        let dtlRcds = execRpt.stepRpts.map(cfg.stepRcdToDelimitedString);
-        writeRcdsToStream(stepStream, dtlRcds);
-      }
-    });
-  })
-  .then(() => {
     closeStream(summStream);
     if (detail)
       closeStream(stepStream);
-  })
-  .catch(err => {
+  }
+  catch(err) {
     spinner.stop();
     console.log('error:', err)
     error(`${err}`);
-  });
+  };
 };
