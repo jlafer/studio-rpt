@@ -2,6 +2,7 @@ const {fillOutConfig} = require('./config');
 
 const stdRawCfg = {
   delimiter: ',',
+  batchSize: 50,
   fields: [
     {
       "name":"aa",

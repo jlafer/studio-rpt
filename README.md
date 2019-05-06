@@ -99,7 +99,8 @@ The report configuration file must follow this format:
       "default":VALUE
     },
     ...
-  ]
+  ],
+  "batchSize": integer
 }
 
 DELIMITER :: ',' || '\t'

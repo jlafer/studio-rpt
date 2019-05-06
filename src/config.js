@@ -84,7 +84,9 @@ const makeSummHeader = (stdSummFlds, fields) => {
 };
 
 const fillOutConfig = (stdSummFlds, stdStepFlds, rawCfg) => {
-  const {fields, ...rest} = rawCfg;
+  const {fields, batchSize, delimiter, ...rest} = rawCfg;
+  const _batchSize = batchSize ? batchSize : 100;
+  const _delimiter = delimiter ? delimiter : ',';
   const fieldsWithFns = fields.map(addWhereFn);
   const summHeader = makeSummHeader(stdSummFlds, fields);
   const dtlHeader = [...stdStepFlds];
@@ -107,6 +109,8 @@ const fillOutConfig = (stdSummFlds, stdStepFlds, rawCfg) => {
   return {
     ...rest,
     fields: fieldsWithFns,
+    delimiter: _delimiter,
+    batchSize: _batchSize,
     summHeader,
     dtlHeader,
     dtlHeaderQualified,

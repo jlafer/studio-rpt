@@ -2,10 +2,14 @@ const R = require('ramda');
 const {makeSummHeader, fillOutConfig} = require('./config');
 const {stdSummFlds, stdStepFlds, stdRawCfg} = require('./test-helpers');
 
+//TODO
+// - add cases for setting default values when not configured by user
+
 // fillOutConfig tests
 test("fillOutConfig adds all fields", () => {
   const actual = fillOutConfig(stdSummFlds, stdStepFlds, stdRawCfg);
   expect(actual.delimiter).toEqual(',');
+  expect(actual.batchSize).toEqual(50);
   expect(actual.summHeader).toEqual(R.concat(stdSummFlds, ['aa', 'bb']));
   expect(actual.dtlHeader).toEqual(stdStepFlds);
   expect(actual.dtlHeaderQualified).toEqual(['step.d', 'step.e', 'step.f']);

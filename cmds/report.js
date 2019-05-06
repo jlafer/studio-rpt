@@ -54,7 +54,7 @@ module.exports = async (args) => {
       writeToStream(stepStream, cfg.dtlHeader.join(cfg.delimiter)+'\n');
     }
     const firstPage = await helpers.getExecutionsPage(
-      client, flowSid, {dateCreatedFrom: fromDt, dateCreatedTo: toDt, pageSize: 10}
+      client, flowSid, {dateCreatedFrom: fromDt, dateCreatedTo: toDt, pageSize: cfg.batchSize}
     );
     let {nextPageUrl, execContexts} = firstPage;
     const firstPageData = await Promise.all(
