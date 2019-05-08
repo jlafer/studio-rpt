@@ -24,6 +24,8 @@ const addStepNamespaceToVars = mapKeysOfObject(addStepNamespaceToFirst);
 module.exports = {
   addStepNamespace,
   addStepNamespaceToVars,
+  getFlowVars,
+  getTriggerVars,
   qualifyFlowVars,
   qualifyTriggerVars
 }

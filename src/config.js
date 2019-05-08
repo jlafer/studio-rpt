@@ -9,8 +9,8 @@ const stdSummFlds = [
 ];
 
 const stdStepFlds = [
-  'sid', 'name', 'idx', 'transitionedTo', 'startTime', 'endTime', 'duration',
-  'elapsed', 'result'
+  'sid', 'stepClass', 'name', 'idx', 'transitionedTo', 'startTime', 'endTime',
+  'duration', 'elapsed', 'result'
 ];
 
 // testToPredicate :: [operator, operand] -> predicate

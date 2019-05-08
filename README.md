@@ -51,23 +51,25 @@ File names take the following format:
 ## Report Data
 Each summary execution report provides the following fields:
 - sid - the execution SID
-- callSid - the call SID
 - appName - the Studio flow name
 - appVersion - the Studio flow version
 - startTime - the starting timestamp of the execution, in ISO 8601 format using the timezone specified with --fromDt (or -F)
 - endTime - the ending timestamp of the execution, in ISO 8601 format
+- lastStep - the name of the last widget executed
+- result - the event reported by Studio for the last-executed widget in the execution
+- callSid - the call SID
 - from - the phone number of the caller
 - to - the Twilio phone number dialed
-- lastStep - the name of the last widget executed
 - [custom execution fields]
 
 Each detail report provides the following fields:
 - sid - the execution SID
+- stepClass - the Studio widget class for this step
 - name - the Studio widget name for this step
 - idx - the index (or sequence) number of the step in the order of execution
 - transitionedTo - the name of the widget in the following step
-- startTime - the starting timestamp of the execution, in ISO 8601 format (GMT)
-- endTime - the ending timestamp of the execution, in ISO 8601 format (GMT)
+- startTime - the starting timestamp of the step, in ISO 8601 format (GMT)
+- endTime - the ending timestamp of the step, in ISO 8601 format (GMT)
 - duration - the time spent in the step, in mSec (currently rounded to one second)
 - elapsed - the elapsed time from the start of the flow execution through the end of this step, in mSec
 - result - the result reported by the Studio engine for this step

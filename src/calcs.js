@@ -1,5 +1,5 @@
 const R = require('ramda');
-const {addStepNamespaceToVars, qualifyFlowVars, qualifyTriggerVars}
+const {addStepNamespaceToVars, getFlowVars, qualifyFlowVars, qualifyTriggerVars}
 = require('./functions');
 const {pickNamesAndValues} = require('./temputil');
 
@@ -66,6 +66,30 @@ const logTable = (table) => {
   table.rows.forEach(row => {console.log('row:', row);});
 };
 
+const isHttpCall = R.allPass([R.has('status_code'), R.has('content_type')]);
+const isConnectCall = R.allPass([R.has('DialCallStatus'), R.has('DialCallSid')]);
+const isSendToFlex = R.allPass([R.has('QueueResult'), R.has('QueueSid')]);
+const isGatherInput = R.anyPass([R.has('Digits'), R.has('SpeechResult')]);
+
+const makeStepClass = (widgetVars, flowVars, idx, result, duration) => {
+  if (idx == 0)
+    return 'Trigger';
+  if (isHttpCall(widgetVars))
+    return 'HttpCall';
+  if (isConnectCall(widgetVars))
+    return 'ConnectCallTo';
+  if (isGatherInput(widgetVars))
+    return 'GatherInput';
+  if (isSendToFlex(widgetVars))
+    return 'SendToFlex';
+  if (result === 'audioComplete')
+    return 'SayOrPlay';
+  if (['match','noMatch'].includes(result))
+    return 'SplitOn';
+  if (R.whereEq(widgetVars, flowVars))
+    return 'SetVariables';
+};
+
 const addRowToTable = (accum, stepAndContext, idx) => {
   const {sid, startTimeMSec, prevTimeMSec, rows} = accum;
   const {step, context: stepContext} = stepAndContext;
@@ -73,20 +97,22 @@ const addRowToTable = (accum, stepAndContext, idx) => {
     transitionedFrom: name, transitionedTo, name: result,
     dateCreated: endTime
   } = step;
-  const endDt = new Date(endTime);
-  const endTimeMSec = endDt.getTime();
-  const duration = endTimeMSec - prevTimeMSec;
-  const elapsed = endTimeMSec - startTimeMSec;
-  const startDt = new Date();
-  startDt.setTime(prevTimeMSec);
-  const startTime = startDt.toISOString();
   const widgetVars = R.pathOr(
     {},
     ['context', 'widgets', name],
     stepContext
   );
+  const endDt = new Date(endTime);
+  const endTimeMSec = endDt.getTime();
+  const duration = endTimeMSec - prevTimeMSec;
+  const stepClass = makeStepClass(widgetVars, getFlowVars(stepContext), idx, result, duration);
+  const elapsed = endTimeMSec - startTimeMSec;
+  const startDt = new Date();
+  startDt.setTime(prevTimeMSec);
+  const startTime = startDt.toISOString();
   const _stepVars = {
-    name, idx, transitionedTo, startTime, endTime, duration, elapsed, result
+    name, idx, stepClass, transitionedTo, startTime, endTime, duration,
+    elapsed, result
   };
   const triggerVars = (idx == 0)
     ? qualifyTriggerVars(stepContext)
