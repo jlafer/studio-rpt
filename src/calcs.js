@@ -132,7 +132,9 @@ const transformExecutionData = (flow, cfg, execAndContext, steps) => {
   const {sid, accountSid, dateCreated, dateUpdated} = execution;
   const stepTable = makeStepTable(execAndContext, steps);
   //logTable(stepTable);
-  const lastStep = R.last(stepTable.rows)['step.name'];
+  const lastRow = R.last(stepTable.rows);
+  const lastStep = lastRow['step.name'];
+  const result = lastRow['step.result'];
   const customFlds = cfg.fields.map(calculateValue(stepTable));
   const call = context.context.trigger.call;
   const callProps = {};
@@ -146,7 +148,7 @@ const transformExecutionData = (flow, cfg, execAndContext, steps) => {
   const customValues = pickNamesAndValues(customFlds);
   return {
     sid, accountSid, appName: friendlyName, appVersion: version,
-    startTime: dateCreated, endTime: dateUpdated, lastStep,
+    startTime: dateCreated, endTime: dateUpdated, lastStep, result,
     ...callProps,
     ...customValues,
     stepRpts

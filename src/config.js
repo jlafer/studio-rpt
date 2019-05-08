@@ -4,7 +4,7 @@ const {valueNotObject, valueIsObject, valueIsArray, isNotNil, isNotEquals}
 = require('../src/temputil');
 
 const stdSummFlds = [
-  'sid', 'appName', 'appVersion', 'startTime', 'endTime', 'lastStep',
+  'sid', 'appName', 'appVersion', 'startTime', 'endTime', 'lastStep', 'result',
   'callSid', 'from', 'to'
 ];
 

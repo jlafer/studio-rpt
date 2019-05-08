@@ -134,7 +134,8 @@ Below is a list of the widget variables that are present with widgets of the var
 
 ### Gather Input on Call
 - msg - will contain one of: "Gather End"
-- FlowEvent - will contain one of: "audioComplete", "timeout"
+- FlowEvent - will contain one of: "audioComplete" if input was collected; "timeout" if no input was collected
+- CallStatus - "in-progress" if the flow transitioned from the Gather widget; "completed" if the caller hung up
 - Digits - digit(s) pressed if caller used DTMF
 - SpeechResult - text for caller's speech if the caller used speech
 - Confidence - confidence, expressed as a decimal string between 0.000 and 1.000, if the caller used speech
@@ -145,8 +146,14 @@ Below is a list of the widget variables that are present with widgets of the var
 - QueueTime - time in queue, in seconds
 - QueueSid - the SID of the queue into which the task was placed
 
-### Run Function
+### Run Function and HTTP Request
 - status_code - the HTTP status code number (e.g., 200)
 - content_type - the response content type (e.g., "application/json")
 - parsed - the parsed JSON data returned by the function, if the content\_type was `application/json`
 - body - the raw text data returned by the function, if the content\_type was `text/plain`
+
+### Connect Call To
+- DialCallStatus - will contain one of: "completed", 
+- DialCallDuration - time of the dialed call, in seconds
+- DialCallSid - the SID of the dialed call
+- CallStatus - will contain "in-progress"

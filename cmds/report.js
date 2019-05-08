@@ -2,8 +2,14 @@
   This module supports the 'report' command of the 'studiorpt' CLI program.
 
   TODO
+  - add endMethod, endInitiator, endReason
+  - add inference of widget class from vars
+  - add raw value to step report (based on widget class)
+  - configure unique menu count once widget class support done
+  - add support for digital flows
   - move utility functions out
   - create fnal util package
+  - add support for other value mapping functions
 */
 
 const ora = require('ora');
