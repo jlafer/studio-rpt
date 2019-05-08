@@ -80,7 +80,9 @@ const stdStepTable = {
 
 const stdExecAndContext = {
   execution: {
-    sid: 'FNxxxx', accountSid: 'ACxxxx', dateCreated: '2019-04-28T01:19:48.000Z', dateUpdated: '2019-04-28T01:19:59.000Z'
+    sid: 'FNxxxx', accountSid: 'ACxxxx',
+    dateCreated: '2019-04-28T01:19:48.000Z',
+    dateUpdated: null
   },
   context: {
     context: {

@@ -1,7 +1,7 @@
 const R = require('ramda');
 const {addStepNamespaceToVars, getFlowVars, qualifyFlowVars, qualifyTriggerVars}
 = require('./functions');
-const {pickNamesAndValues} = require('./temputil');
+const {pickNamesAndValues, isoDateToMsec} = require('./temputil');
 
 const keyStartsWithStep = (_v, k) => R.test(/^step./, k);
 
@@ -95,15 +95,14 @@ const addRowToTable = (accum, stepAndContext, idx) => {
   const {step, context: stepContext} = stepAndContext;
   const {
     transitionedFrom: name, transitionedTo, name: result,
-    dateCreated: endTime
+    dateCreated: endTime      // Studio "creates" the step when it ends execution
   } = step;
   const widgetVars = R.pathOr(
     {},
     ['context', 'widgets', name],
     stepContext
   );
-  const endDt = new Date(endTime);
-  const endTimeMSec = endDt.getTime();
+  const endTimeMSec = isoDateToMsec(endTime);
   const duration = endTimeMSec - prevTimeMSec;
   const stepClass = makeStepClass(widgetVars, getFlowVars(stepContext), idx, result, duration);
   const elapsed = endTimeMSec - startTimeMSec;
@@ -132,6 +131,7 @@ const addRowToTable = (accum, stepAndContext, idx) => {
     sid,
     startTimeMSec,
     prevTimeMSec: endTimeMSec,
+    duration: elapsed,
     stepCnt: idx,   // don't count the trigger "widget"
     rows: [...rows, row]};
 };
@@ -139,10 +139,10 @@ const addRowToTable = (accum, stepAndContext, idx) => {
 const makeStepTable = (execAndContext, steps) => {
   const {execution} = execAndContext;
   const {dateCreated} = execution;
-  const startDt = new Date(dateCreated);
-  const startTimeMSec = startDt.getTime();
+  const startTimeMSec = isoDateToMsec(dateCreated);
   const accum = {
-    sid: execution.sid, startTimeMSec, prevTimeMSec: startTimeMSec, rows: []
+    sid: execution.sid, startTimeMSec, prevTimeMSec: startTimeMSec,
+    duration: 0, rows: []
   };
   const table = R.reverse(steps).reduce(addRowToTable, accum);
   return table;
@@ -155,12 +155,13 @@ const makeFilePath = (outDir, fromDt, toDt, type, flow) => {
 const transformExecutionData = (flow, cfg, execAndContext, steps) => {
   const {friendlyName, version} = flow;
   const {execution, context} = execAndContext;
-  const {sid, accountSid, dateCreated, dateUpdated} = execution;
+  const {sid, accountSid, dateCreated} = execution;
   const stepTable = makeStepTable(execAndContext, steps);
   //logTable(stepTable);
   const lastRow = R.last(stepTable.rows);
   const lastStep = lastRow['step.name'];
   const result = lastRow['step.result'];
+  const endTime = lastRow['step.endTime'];
   const customFlds = cfg.fields.map(calculateValue(stepTable));
   const call = context.context.trigger.call;
   const callProps = {};
@@ -174,7 +175,8 @@ const transformExecutionData = (flow, cfg, execAndContext, steps) => {
   const customValues = pickNamesAndValues(customFlds);
   return {
     sid, accountSid, appName: friendlyName, appVersion: version,
-    startTime: dateCreated, endTime: dateUpdated, lastStep, result,
+    startTime: dateCreated, endTime, duration: stepTable.duration,
+    lastStep, result,
     ...callProps,
     ...customValues,
     stepRpts

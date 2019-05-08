@@ -85,6 +85,8 @@ const closeStream = (stream) => {
   stream.end();
 };
 
+const isoDateToMsec = (isoDateStr) => new Date(isoDateStr).getTime();
+
 module.exports = {
   log,
   makeMapFirstOfPairFn,
@@ -100,5 +102,6 @@ module.exports = {
   openStream,
   writeToStream,
   writeRcdsToStream,
-  closeStream
+  closeStream,
+  isoDateToMsec
 };

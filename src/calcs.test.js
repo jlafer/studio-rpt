@@ -1,16 +1,20 @@
 const R = require('ramda');
 const {transformExecutionData, valueAggregator} = require('./calcs');
 const {stdSteps, stdFlow, stdCfg, stdExecAndContext} = require('./test-helpers');
+const {isoDateToMsec} = require('./temputil');
 
 // transformExecutionData tests
 test("transformExecutionData performs", () => {
   const actual = transformExecutionData(stdFlow, stdCfg, stdExecAndContext, stdSteps);
   const {sid, accountSid, dateCreated} = stdExecAndContext.execution;
-  //expect(actual).toEqual({foo: 'bar'});
+  const dateEnded = R.head(stdSteps).step.dateCreated; // steps are in reverse chronological
+  
   expect(actual.sid).toEqual(sid);
   expect(actual.accountSid).toEqual(accountSid);
   expect(actual.callSid).toEqual('CAxxxx');
   expect(actual.startTime).toEqual(dateCreated);
+  expect(actual.endTime).toEqual(dateEnded);
+  expect(actual.duration).toEqual(isoDateToMsec(dateEnded) - isoDateToMsec(dateCreated));
   expect(actual.from).toEqual('+12088747271');
   expect(actual.to).toEqual('+15551112222');
   expect(actual.aa).toEqual(11000);

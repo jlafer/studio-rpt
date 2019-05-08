@@ -55,6 +55,7 @@ Each summary execution report provides the following fields:
 - appVersion - the Studio flow version
 - startTime - the starting timestamp of the execution, in ISO 8601 format using the timezone specified with --fromDt (or -F)
 - endTime - the ending timestamp of the execution, in ISO 8601 format
+- duration - the execution time, in mSec (currently rounded to one second)
 - lastStep - the name of the last widget executed
 - result - the event reported by Studio for the last-executed widget in the execution
 - callSid - the call SID
