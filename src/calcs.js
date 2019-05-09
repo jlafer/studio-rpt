@@ -1,7 +1,7 @@
 const R = require('ramda');
 const {addStepNamespaceToVars, getFlowVars, qualifyFlowVars, qualifyTriggerVars}
 = require('./functions');
-const {pickNamesAndValues, isoDateToMsec} = require('./temputil');
+const {pickNamesAndValues, isoDateToMsec, dtToIsoLocal} = require('./temputil');
 
 const keyStartsWithStep = (_v, k) => R.test(/^step./, k);
 
@@ -95,20 +95,21 @@ const addRowToTable = (accum, stepAndContext, idx) => {
   const {step, context: stepContext} = stepAndContext;
   const {
     transitionedFrom: name, transitionedTo, name: result,
-    dateCreated: endTime      // Studio "creates" the step when it ends execution
+    dateCreated: endTimeGMT      // Studio "creates" the step when it ends execution
   } = step;
   const widgetVars = R.pathOr(
     {},
     ['context', 'widgets', name],
     stepContext
   );
+  const startDt = new Date();
+  startDt.setTime(prevTimeMSec);
+  const startTime = dtToIsoLocal(startDt);
+  const endTime = dtToIsoLocal(endTimeGMT);
   const endTimeMSec = isoDateToMsec(endTime);
   const duration = endTimeMSec - prevTimeMSec;
   const stepClass = makeStepClass(widgetVars, getFlowVars(stepContext), idx, result, duration);
   const elapsed = endTimeMSec - startTimeMSec;
-  const startDt = new Date();
-  startDt.setTime(prevTimeMSec);
-  const startTime = startDt.toISOString();
   const _stepVars = {
     name, idx, stepClass, transitionedTo, startTime, endTime, duration,
     elapsed, result
@@ -161,6 +162,7 @@ const transformExecutionData = (flow, cfg, execAndContext, steps) => {
   const lastRow = R.last(stepTable.rows);
   const lastStep = lastRow['step.name'];
   const result = lastRow['step.result'];
+  const startTime = dtToIsoLocal(dateCreated);
   const endTime = lastRow['step.endTime'];
   const customFlds = cfg.fields.map(calculateValue(stepTable));
   const call = context.context.trigger.call;
@@ -175,7 +177,7 @@ const transformExecutionData = (flow, cfg, execAndContext, steps) => {
   const customValues = pickNamesAndValues(customFlds);
   return {
     sid, accountSid, appName: friendlyName, appVersion: version,
-    startTime: dateCreated, endTime, duration: stepTable.duration,
+    startTime, endTime, duration: stepTable.duration,
     lastStep, result,
     ...callProps,
     ...customValues,

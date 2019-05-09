@@ -1,19 +1,20 @@
 const R = require('ramda');
 const {transformExecutionData, valueAggregator} = require('./calcs');
 const {stdSteps, stdFlow, stdCfg, stdExecAndContext} = require('./test-helpers');
-const {isoDateToMsec} = require('./temputil');
+const {isoDateToMsec, dtToIsoLocal} = require('./temputil');
 
 // transformExecutionData tests
 test("transformExecutionData performs", () => {
   const actual = transformExecutionData(stdFlow, stdCfg, stdExecAndContext, stdSteps);
   const {sid, accountSid, dateCreated} = stdExecAndContext.execution;
   const dateEnded = R.head(stdSteps).step.dateCreated; // steps are in reverse chronological
-  
+  const startTime = dtToIsoLocal(dateCreated);
+  const endTime = dtToIsoLocal(dateEnded);
   expect(actual.sid).toEqual(sid);
   expect(actual.accountSid).toEqual(accountSid);
   expect(actual.callSid).toEqual('CAxxxx');
-  expect(actual.startTime).toEqual(dateCreated);
-  expect(actual.endTime).toEqual(dateEnded);
+  expect(actual.startTime).toEqual(startTime);
+  expect(actual.endTime).toEqual(endTime);
   expect(actual.duration).toEqual(isoDateToMsec(dateEnded) - isoDateToMsec(dateCreated));
   expect(actual.from).toEqual('+12088747271');
   expect(actual.to).toEqual('+15551112222');
@@ -26,6 +27,8 @@ test("transformExecutionData performs", () => {
   const step4 = actual.stepRpts[4];
   expect(step4['step.idx']).toEqual(4);
   expect(step4['step.name']).toEqual('ddd');
+  expect(step4['step.startTime']).toEqual('2019-04-27T18:19:58-07:00');
+  expect(step4['step.endTime']).toEqual('2019-04-27T18:19:59-07:00');
   expect(step4['step.duration']).toEqual(1000);
   expect(step4['step.elapsed']).toEqual(11000);
   expect(step4['step.result']).toEqual('audioComplete');

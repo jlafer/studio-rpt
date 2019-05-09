@@ -1,3 +1,4 @@
+const moment = require('moment');
 const R = require('ramda');
 const fs = require('fs');
 
@@ -87,6 +88,9 @@ const closeStream = (stream) => {
 
 const isoDateToMsec = (isoDateStr) => new Date(isoDateStr).getTime();
 
+// dtToIsoLocal :: (Date or ISO string) -> ISO string in local TZ
+const dtToIsoLocal = (dt) => moment(dt).format();
+
 module.exports = {
   log,
   makeMapFirstOfPairFn,
@@ -103,5 +107,6 @@ module.exports = {
   writeToStream,
   writeRcdsToStream,
   closeStream,
-  isoDateToMsec
+  isoDateToMsec,
+  dtToIsoLocal
 };
