@@ -30,10 +30,14 @@ const {fillOutConfig, stdStepFlds, stdSummFlds} = require('../src/config');
 const calculateExecutionData = R.curry(
     async (client, flow, cfgWithFns, execAndContext) =>
 {
+  console.log('calculateExecutionData: getting steps');
   const steps = await helpers.getSteps(
     client, flow.sid, execAndContext.execution.sid
   );
-  return transformExecutionData(flow, cfgWithFns, execAndContext, steps);
+  console.log('calculateExecutionData: got steps');
+  const rptData = transformExecutionData(flow, cfgWithFns, execAndContext, steps);
+  console.log('calculated rptData');
+  return rptData;
 });
 
 const writeData = (execRpts, cfg, summStream, stepStream) => {
@@ -49,9 +53,9 @@ const writeData = (execRpts, cfg, summStream, stepStream) => {
 
 module.exports = async (args) => {
   const {acct, auth, detail, flowSid, fromDt, toDt, cfgPath, outDir} = args;
-  let dtlPath, stepStream;
+  let dtlPath, stepStream, spinner;
   try {
-    const spinner = ora().start();
+    spinner = ora().start();
     const client = require('twilio')(acct, auth);
     const flow = await helpers.getWorkflow(client, flowSid);
     const rawCfg = await readJsonFile(cfgPath);
@@ -64,15 +68,18 @@ module.exports = async (args) => {
       stepStream = openStream(dtlPath);
       writeToStream(stepStream, cfg.dtlHeader.join(cfg.delimiter)+'\n');
     }
+    console.log('getting page');
     const firstPage = await helpers.getExecutionsPage(
       client, flowSid, {dateCreatedFrom: fromDt, dateCreatedTo: toDt, pageSize: cfg.batchSize}
     );
+    console.log('got page');
     let {nextPageUrl, execContexts} = firstPage;
     const firstPageData = await Promise.all(
       execContexts.map(calculateExecutionData(client, flow, cfg))
     )
     writeData(firstPageData, cfg, summStream, stepStream);
     while (nextPageUrl) {
+      console.log('getting another page');
       let nextPage = await helpers.getExecutionsPage(client, flowSid, nextPageUrl);
       execContexts = nextPage.execContexts;
       let nextPageData = await Promise.all(

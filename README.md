@@ -61,6 +61,9 @@ Each summary execution report provides the following fields:
 - callSid - the call SID
 - from - the phone number of the caller
 - to - the Twilio phone number dialed
+- endMethod - the method by which the Studio execution ended: either `hangup` or `redirect`
+- endBy - the party responsible for ending the execution: either `user`, `app` or `unknown`; the Studio application can use the `Set Variable` widget to set the `endBy` variable and override the value set by the program
+- endReason - the reason for ending the execution; this field must be populated in the Studio application, which can use the `Set Variable` widget to set the `endReason` variable; the suggested value is one of: `agent`, `self-service`, `timeout`, `no-match` or `error`
 - [custom execution fields]
 
 Each detail report provides the following fields:

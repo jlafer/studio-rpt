@@ -66,5 +66,5 @@
       "default":0
     }
   ],
-  "batchSize":10
+  "batchSize":5
 }

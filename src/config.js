@@ -5,7 +5,7 @@ const {valueNotObject, valueIsObject, valueIsArray, isNotNil, isNotEquals}
 
 const stdSummFlds = [
   'sid', 'appName', 'appVersion', 'startTime', 'endTime', 'duration', 'lastStep', 'result',
-  'callSid', 'from', 'to'
+  'callSid', 'from', 'to', 'endMethod', 'endBy', 'endReason'
 ];
 
 const stdStepFlds = [

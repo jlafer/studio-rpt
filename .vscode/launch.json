@@ -4,6 +4,20 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
+  {
+    "type": "node",
+    "request": "launch",
+    "name": "report",
+    "program": "${workspaceFolder}/bin/studiorpt",
+    "args": ["report",
+      "-a","AC9cc7a3b41312b4d9e5008376f9d84b0b",
+      "-A","f8cf0a5cd712799d984011100b65ee15",
+      "--flowSid","FW2526784cdc4470f3260d7b3880ad3aea",
+      "-F","2019-05-06T18:18:00-07:00",
+      "-T","2019-05-06T20:40:59-07:00",
+      "-c","config.json",
+      "-o","/tmp"]
+  },
     {
       "type": "node",
       "request": "launch",

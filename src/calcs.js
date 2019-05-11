@@ -2,6 +2,7 @@ const R = require('ramda');
 const {addStepNamespaceToVars, getFlowVars, qualifyFlowVars, qualifyTriggerVars}
 = require('./functions');
 const {pickNamesAndValues, isoDateToMsec, dtToIsoLocal} = require('./temputil');
+const {addWhereFn} = require('./config');
 
 const keyStartsWithStep = (_v, k) => R.test(/^step./, k);
 
@@ -153,15 +154,46 @@ const makeFilePath = (outDir, fromDt, toDt, type, flow) => {
   return `${outDir}/${flow.sid}_${flow.version}_${type}_${fromDt}_${toDt}.csv`;
 };
 
+const wasRouted = (stepTable) => {
+  const metricFld = {
+    "where":[{"step.stepClass":"SendToFlex"}],
+    "select":1,
+    "map":"identity",
+    "agg":"sum",
+    "default":0
+  };
+  const fldWithFunction = addWhereFn(metricFld);
+  const fldWithValue = calculateValue(stepTable, fldWithFunction);
+  return (fldWithValue.value > 0);
+};
+
+const wasReleasedByUser = (stepTable) => {
+  const metricFld = {
+    "where":[{"step.stepClass":"SayOrPlay", "CallStatus": 'completed'}],
+    "select":1,
+    "map":"identity",
+    "agg":"sum",
+    "default":0
+  };
+  const fldWithFunction = addWhereFn(metricFld);
+  const fldWithValue = calculateValue(stepTable, fldWithFunction);
+  return (fldWithValue.value > 0);
+};
+
 const transformExecutionData = (flow, cfg, execAndContext, steps) => {
   const {friendlyName, version} = flow;
   const {execution, context} = execAndContext;
   const {sid, accountSid, dateCreated} = execution;
+  console.log(`transformExecutionData: sid: ${sid}`);
   const stepTable = makeStepTable(execAndContext, steps);
   //logTable(stepTable);
   const lastRow = R.last(stepTable.rows);
   const lastStep = lastRow['step.name'];
   const result = lastRow['step.result'];
+  const endMethod = wasRouted(stepTable) ? 'redirect' : 'hangup';
+  const endBy = wasReleasedByUser(stepTable)
+    ? 'user' : (lastRow['flow.endBy'] || 'unknown');
+  const endReason = lastRow['flow.endReason'] || 'unknown';
   const startTime = dtToIsoLocal(dateCreated);
   const endTime = lastRow['step.endTime'];
   const customFlds = cfg.fields.map(calculateValue(stepTable));
@@ -178,7 +210,7 @@ const transformExecutionData = (flow, cfg, execAndContext, steps) => {
   return {
     sid, accountSid, appName: friendlyName, appVersion: version,
     startTime, endTime, duration: stepTable.duration,
-    lastStep, result,
+    lastStep, result, endMethod, endBy, endReason,
     ...callProps,
     ...customValues,
     stepRpts
