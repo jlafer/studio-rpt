@@ -83,6 +83,18 @@ test("valueAggregator performs last when accum is null", () => {
 test("valueAggregator performs last when accum is not null", () => {
   expect(valueAggregator('last', 42, 21)).toEqual(21);
 });
+test("valueAggregator performs exists when accum is null", () => {
+  expect(valueAggregator('exists', null, 42)).toEqual(true);
+});
+test("valueAggregator performs exists when accum is not null", () => {
+  expect(valueAggregator('exists', 42, 21)).toEqual(true);
+});
+test("valueAggregator 'exists' keeps true when value is null", () => {
+  expect(valueAggregator('exists', true, null)).toEqual(true);
+});
+test("valueAggregator 'exists' keeps false when value is null", () => {
+  expect(valueAggregator('exists', false, null)).toEqual(false);
+});
 test("valueAggregator performs path when accum is null", () => {
   expect(valueAggregator('path', null, 'aaa')).toEqual('aaa');
 });

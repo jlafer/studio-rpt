@@ -121,7 +121,7 @@ SELECTION :: VARNAME || VALUE
 VARNAME :: <var name> || step.<var name> || flow.<var name>
 VALUE :: string || integer
 FNAME :: identity
-AGGNAME :: first || last || sum || count || max || path
+AGGNAME :: first || last || sum || count || max || exists || path
 ```
 
 Note: When multiple `where` clauses are specified their evaluation results are combined with an implied logical-or operation. When multiple conditions are included within a single `where` clause, their evaluation results are combined with an implied logical-and operation.

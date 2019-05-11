@@ -2,7 +2,8 @@
   This module supports the 'report' command of the 'studiorpt' CLI program.
 
   TODO
-  - add endMethod, endInitiator, endReason
+  - add support for config defaults
+  - debug: batchSize > records returned causes ECONNRESET error
   - test and profile: messaging, make outgoing call,
     record voicemail, enqueue, capture payment
   - add inference of widget class for the above classes
@@ -15,6 +16,7 @@
 
   TEST CASES NEEDED
   - widgetClass
+  - more for: endMethod, endInitiator, endReason
 */
 
 const ora = require('ora');

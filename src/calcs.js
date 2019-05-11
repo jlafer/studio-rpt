@@ -38,12 +38,15 @@ const joinIfNotNull = R.curry((separator, first, second) => {
     return second;
 });
 
+const exists = (first, second) => (!!first || !!second);
+
 const aggFnMap = {
   sum: R.add,
   count: R.inc,
   max: Math.max,
   last: R.defaultTo,
   first: R.flip(R.defaultTo),
+  exists,
   path: joinIfNotNull('__')
 };
 
@@ -159,12 +162,12 @@ const wasRouted = (stepTable) => {
     "where":[{"step.stepClass":"SendToFlex"}],
     "select":1,
     "map":"identity",
-    "agg":"sum",
-    "default":0
+    "agg":"exists",
+    "default":false
   };
   const fldWithFunction = addWhereFn(metricFld);
   const fldWithValue = calculateValue(stepTable, fldWithFunction);
-  return (fldWithValue.value > 0);
+  return fldWithValue.value;
 };
 
 const wasReleasedByUser = (stepTable) => {
@@ -172,12 +175,12 @@ const wasReleasedByUser = (stepTable) => {
     "where":[{"step.stepClass":"SayOrPlay", "CallStatus": 'completed'}],
     "select":1,
     "map":"identity",
-    "agg":"sum",
-    "default":0
+    "agg":"exists",
+    "default":false
   };
   const fldWithFunction = addWhereFn(metricFld);
   const fldWithValue = calculateValue(stepTable, fldWithFunction);
-  return (fldWithValue.value > 0);
+  return fldWithValue.value;
 };
 
 const transformExecutionData = (flow, cfg, execAndContext, steps) => {
