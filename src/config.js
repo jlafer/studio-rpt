@@ -74,6 +74,18 @@ const getFieldWhereFn = (field) => {
   return R.anyPass(filterFns);
 };
 
+const addFieldDefaults = (field) => {
+  const {name, where, select, map, agg, dflt, ...rest} = field;
+  return {...rest,
+    name: name,
+    where: where || [],
+    select: select || name,
+    map: map || 'identity',
+    agg: agg || 'last',
+    dflt: dflt || null
+  }
+};
+
 const addWhereFn = (field) => {
   const fieldWhereFn = getFieldWhereFn(field)
   return {...field, fieldWhereFn}
@@ -87,8 +99,8 @@ const fillOutConfig = (stdSummFlds, stdStepFlds, rawCfg) => {
   const {fields, batchSize, delimiter, ...rest} = rawCfg;
   const _batchSize = batchSize ? batchSize : 100;
   const _delimiter = delimiter ? delimiter : ',';
-  const fieldsWithFns = fields.map(addWhereFn);
-  const summHeader = makeSummHeader(stdSummFlds, fields);
+  const fieldsWithFns = fields.map(addFieldDefaults).map(addWhereFn);
+  const summHeader = makeSummHeader(stdSummFlds, fieldsWithFns);
   const dtlHeader = [...stdStepFlds];
   const dtlHeaderQualified = dtlHeader.map(addStepNamespace);
 

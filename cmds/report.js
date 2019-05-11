@@ -3,6 +3,8 @@
 
   TODO
   - add support for config defaults
+  - add config validation
+  - redo aggregation to support avg, unique, etc.
   - debug: batchSize > records returned causes ECONNRESET error
   - test and profile: messaging, make outgoing call,
     record voicemail, enqueue, capture payment

@@ -7,7 +7,7 @@ const fieldBase = {
   "select":"flow.language",
   "map":"identity",
   "agg":"last",
-  "default":"English"
+  "dlft":"English"
 };
 
 const row = {

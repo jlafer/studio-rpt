@@ -102,7 +102,7 @@ The report configuration file must follow this format:
       "select":SELECTION,
       "map":"FNAME",
       "agg":"AGGNAME",
-      "default":VALUE
+      "dlft":VALUE
     },
     ...
   ],
@@ -121,7 +121,7 @@ SELECTION :: VARNAME || VALUE
 VARNAME :: <var name> || step.<var name> || flow.<var name>
 VALUE :: string || integer
 FNAME :: identity
-AGGNAME :: first || last || sum || count || max || exists || path
+AGGNAME :: first || last || sum || count || unique || max || exists || path
 ```
 
 Note: When multiple `where` clauses are specified their evaluation results are combined with an implied logical-or operation. When multiple conditions are included within a single `where` clause, their evaluation results are combined with an implied logical-and operation.
@@ -163,3 +163,8 @@ Below is a list of the widget variables that are present with widgets of the var
 - DialCallDuration - time of the dialed call, in seconds
 - DialCallSid - the SID of the dialed call
 - CallStatus - will contain "in-progress"
+
+## Release Notes
+1.0.3
+- Added support for default field configuration properties.
+- BREAKING CHANGE - changed `field.default` to `field.dflt` in config file. 

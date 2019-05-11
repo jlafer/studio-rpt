@@ -7,9 +7,8 @@ const stdRawCfg = {
     {
       "name":"aa",
       "select":"step.duration",
-      "map":"identity",
       "agg":"sum",
-      "default": 0
+      "dlft": 0
     },
     {
       "name":"bb",
@@ -17,9 +16,8 @@ const stdRawCfg = {
         {"Digits":{"not":"null"}}
       ],
       "select": 1,
-      "map":"identity",
       "agg":"sum",
-      "default": 0
+      "dlft": 0
     }
   ]
 };

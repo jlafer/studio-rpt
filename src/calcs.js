@@ -60,10 +60,10 @@ const calculateValue = R.curry((stepTable, field) => {
   //console.log('calculateValue: for field:', field);
   const value = rows.filter(rowFilter(field))
     .map(dataGetter(field.select))
-    .map(dataToValueMapper(field.map, field.default))
+    .map(dataToValueMapper(field.map, field.dlft))
     .reduce(valueAggregator(field.agg), null);
   //console.log('calculateValue: value:', value);
-  return {...field, value: (value || field.default)};
+  return {...field, value: (value || field.dlft)};
 });
 
 const logTable = (table) => {
@@ -163,7 +163,7 @@ const wasRouted = (stepTable) => {
     "select":1,
     "map":"identity",
     "agg":"exists",
-    "default":false
+    "dlft":false
   };
   const fldWithFunction = addWhereFn(metricFld);
   const fldWithValue = calculateValue(stepTable, fldWithFunction);
@@ -176,7 +176,7 @@ const wasReleasedByUser = (stepTable) => {
     "select":1,
     "map":"identity",
     "agg":"exists",
-    "default":false
+    "dlft":false
   };
   const fldWithFunction = addWhereFn(metricFld);
   const fldWithValue = calculateValue(stepTable, fldWithFunction);

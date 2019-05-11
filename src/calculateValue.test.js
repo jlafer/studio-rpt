@@ -8,14 +8,14 @@ const fieldBase = {
   "select":"body",
   "map":"identity",
   "agg":"last",
-  "default":"default data"
+  "dlft":"default data"
 };
 const sumField = {
   "name":"duration",
   "select":"step.duration",
   "map":"identity",
   "agg":"sum",
-  "default":0
+  "dlft":0
 };
 
 // 'calculateValue' tests

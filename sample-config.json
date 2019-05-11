@@ -9,14 +9,14 @@
       "select":"body",
       "map":"identity",
       "agg":"last",
-      "default":"open"
+      "dflt":"open"
     },
     {
       "name":"language",
       "select":"flow.language",
       "map":"identity",
       "agg":"last",
-      "default":"English"
+      "dflt":"English"
     },
     {
       "name":"timeInMenu",
@@ -26,7 +26,7 @@
       "select":"step.duration",
       "map":"identity",
       "agg":"sum",
-      "default":0
+      "dflt":0
     },
     {
       "name":"timeInSayPlay",
@@ -36,14 +36,14 @@
       "select":"step.duration",
       "map":"identity",
       "agg":"sum",
-      "default":0
+      "dflt":0
     },
     {
       "name":"maxTimeInStep",
       "select":"step.duration",
       "map":"identity",
       "agg":"max",
-      "default":0
+      "dflt":0
     },
     {
       "name":"functionCallCnt",
@@ -53,7 +53,7 @@
       "select":"step.duration",
       "map":"identity",
       "agg":"count",
-      "default":0
+      "dflt":0
     },
     {
       "name":"abandonCnt",
@@ -63,7 +63,7 @@
       "select":"step.idx",
       "map":"identity",
       "agg":"count",
-      "default":0
+      "dflt":0
     }
   ],
   "batchSize":100
