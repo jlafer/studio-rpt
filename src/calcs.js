@@ -38,31 +38,34 @@ const joinIfNotNull = R.curry((separator, first, second) => {
     return second;
 });
 
-const exists = (first, second) => (!!first || !!second);
-
-const aggFnMap = {
-  sum: R.add,
-  count: R.inc,
-  max: Math.max,
-  last: R.defaultTo,
-  first: R.flip(R.defaultTo),
-  exists,
-  path: joinIfNotNull('__')
+const countUnique = (arr) => {
+  const set = new Set(arr);
+  return set.size;
 };
 
-const valueAggregator = R.curry((agg, accum, value) => {
+const aggFnMap = {
+  sum: R.sum,
+  count: R.length,
+  unique: countUnique,
+  max: R.reduce(R.max, 0),
+  last: R.last,
+  first: R.head,
+  exists: R.complement(R.isEmpty),
+  path: R.join('__')
+};
+
+const valuesAggregator = (agg, values) => {
   const aggFn = aggFnMap[agg];
-  return aggFn(accum, value)
-});
+  return aggFn(values);
+};
 
 const calculateValue = R.curry((stepTable, field) => {
   const {rows} = stepTable;
   //console.log('calculateValue: for field:', field);
-  const value = rows.filter(rowFilter(field))
+  const values = rows.filter(rowFilter(field))
     .map(dataGetter(field.select))
-    .map(dataToValueMapper(field.map, field.dlft))
-    .reduce(valueAggregator(field.agg), null);
-  //console.log('calculateValue: value:', value);
+    .map(dataToValueMapper(field.map, field.dlft));
+  const value = valuesAggregator(field.agg, values);
   return {...field, value: (value || field.dlft)};
 });
 
@@ -187,7 +190,7 @@ const transformExecutionData = (flow, cfg, execAndContext, steps) => {
   const {friendlyName, version} = flow;
   const {execution, context} = execAndContext;
   const {sid, accountSid, dateCreated} = execution;
-  console.log(`transformExecutionData: sid: ${sid}`);
+  //console.log(`transformExecutionData: sid: ${sid}`);
   const stepTable = makeStepTable(execAndContext, steps);
   //logTable(stepTable);
   const lastRow = R.last(stepTable.rows);
@@ -229,6 +232,6 @@ module.exports = {
   makeStepTable,
   rowToStepRptRcd,
   transformExecutionData,
-  valueAggregator,
+  valuesAggregator,
   rowFilter
 };

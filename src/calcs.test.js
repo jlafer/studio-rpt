@@ -1,5 +1,5 @@
 const R = require('ramda');
-const {transformExecutionData, valueAggregator} = require('./calcs');
+const {transformExecutionData, valuesAggregator} = require('./calcs');
 const {stdSteps, stdFlow, stdCfg, stdExecAndContext} = require('./test-helpers');
 const {isoDateToMsec, dtToIsoLocal} = require('./temputil');
 
@@ -40,67 +40,79 @@ test("transformExecutionData performs", () => {
   expect(step4['step.transitionedTo']).toEqual('Ended');
 });
 
-// valueAggregator tests
-test("valueAggregator performs sum when accum is null", () => {
-  expect(valueAggregator('sum', null, 42)).toEqual(42);
+// valuesAggregator tests
+test("valuesAggregator performs sum on empty list", () => {
+  expect(valuesAggregator('sum', [])).toEqual(0);
 });
-test("valueAggregator performs sum when accum = 0", () => {
-  expect(valueAggregator('sum', 0, 42)).toEqual(42);
+test("valuesAggregator performs sum on one value", () => {
+  expect(valuesAggregator('sum', [42])).toEqual(42);
 });
-test("valueAggregator performs sum when accum is non-zero", () => {
-  expect(valueAggregator('sum', 21, 21)).toEqual(42);
+test("valuesAggregator performs sum on multiple values", () => {
+  expect(valuesAggregator('sum', [21, 21])).toEqual(42);
 });
-test("valueAggregator performs count when accum is null", () => {
-  expect(valueAggregator('count', null, 42)).toEqual(1);
+test("valuesAggregator performs count on empty list", () => {
+  expect(valuesAggregator('count', [])).toEqual(0);
 });
-test("valueAggregator performs count when accum = 0", () => {
-  expect(valueAggregator('count', 0, 42)).toEqual(1);
+test("valuesAggregator performs count on one value", () => {
+  expect(valuesAggregator('count', [42])).toEqual(1);
 });
-test("valueAggregator performs count when accum is non-zero", () => {
-  expect(valueAggregator('count', 41, 21)).toEqual(42);
+test("valuesAggregator performs count on multiple values", () => {
+  expect(valuesAggregator('count', [21, 21])).toEqual(2);
 });
-test("valueAggregator performs max when accum is null", () => {
-  expect(valueAggregator('max', null, 42)).toEqual(42);
+test("valuesAggregator performs unique on empty list", () => {
+  expect(valuesAggregator('unique', [])).toEqual(0);
 });
-test("valueAggregator performs max when accum = 0", () => {
-  expect(valueAggregator('max', 0, 42)).toEqual(42);
+test("valuesAggregator performs unique on one value", () => {
+  expect(valuesAggregator('unique', [42])).toEqual(1);
 });
-test("valueAggregator performs max when accum is greater than value", () => {
-  expect(valueAggregator('max', 42, 21)).toEqual(42);
+test("valuesAggregator performs unique on multiple distinct values", () => {
+  expect(valuesAggregator('unique', [21, 42])).toEqual(2);
 });
-test("valueAggregator performs max when accum is less than value", () => {
-  expect(valueAggregator('max', 21, 42)).toEqual(42);
+test("valuesAggregator performs unique on duplicate values", () => {
+  expect(valuesAggregator('unique', [21, 42, 21])).toEqual(2);
 });
-test("valueAggregator performs first when accum is null", () => {
-  expect(valueAggregator('first', null, 42)).toEqual(42);
+test("valuesAggregator performs max on empty list", () => {
+  expect(valuesAggregator('max', [])).toEqual(0);
 });
-test("valueAggregator performs first when accum is not null", () => {
-  expect(valueAggregator('first', 42, 21)).toEqual(42);
+test("valuesAggregator performs max on one value", () => {
+  expect(valuesAggregator('max', [42])).toEqual(42);
 });
-test("valueAggregator performs last when accum is null", () => {
-  expect(valueAggregator('last', null, 42)).toEqual(42);
+test("valuesAggregator performs max on multiple values", () => {
+  expect(valuesAggregator('max', [42, 21])).toEqual(42);
 });
-test("valueAggregator performs last when accum is not null", () => {
-  expect(valueAggregator('last', 42, 21)).toEqual(21);
+test("valuesAggregator performs first on empty list", () => {
+  expect(valuesAggregator('first', [])).toEqual(undefined);
 });
-test("valueAggregator performs exists when accum is null", () => {
-  expect(valueAggregator('exists', null, 42)).toEqual(true);
+test("valuesAggregator performs first on one value", () => {
+  expect(valuesAggregator('first', [42])).toEqual(42);
 });
-test("valueAggregator performs exists when accum is not null", () => {
-  expect(valueAggregator('exists', 42, 21)).toEqual(true);
+test("valuesAggregator performs first on multiple values", () => {
+  expect(valuesAggregator('first', [42, 21])).toEqual(42);
 });
-test("valueAggregator 'exists' keeps true when value is null", () => {
-  expect(valueAggregator('exists', true, null)).toEqual(true);
+test("valuesAggregator performs last on empty list", () => {
+  expect(valuesAggregator('last', [])).toEqual(undefined);
 });
-test("valueAggregator 'exists' keeps false when value is null", () => {
-  expect(valueAggregator('exists', false, null)).toEqual(false);
+test("valuesAggregator performs last on one value", () => {
+  expect(valuesAggregator('last', [42])).toEqual(42);
 });
-test("valueAggregator performs path when accum is null", () => {
-  expect(valueAggregator('path', null, 'aaa')).toEqual('aaa');
+test("valuesAggregator performs last on multiple values", () => {
+  expect(valuesAggregator('last', [42, 0, 21])).toEqual(21);
 });
-test("valueAggregator performs path when accum is not null", () => {
-  expect(valueAggregator('path', 'aaa', 'bbb')).toEqual('aaa__bbb');
+test("valuesAggregator performs exists on empty list", () => {
+  expect(valuesAggregator('exists', [])).toEqual(false);
 });
-test("valueAggregator performs path when accum has multiple nodes", () => {
-  expect(valueAggregator('path', 'aaa__bbb', 'ccc')).toEqual('aaa__bbb__ccc');
+test("valuesAggregator performs exists on one value", () => {
+  expect(valuesAggregator('exists', [42])).toEqual(true);
+});
+test("valuesAggregator performs exists on multiple values", () => {
+  expect(valuesAggregator('exists', [42, 21, 0])).toEqual(true);
+});
+test("valuesAggregator performs path on empty list", () => {
+  expect(valuesAggregator('path', [])).toEqual('');
+});
+test("valuesAggregator performs path on one value", () => {
+  expect(valuesAggregator('path', ['aaa'])).toEqual('aaa');
+});
+test("valuesAggregator performs path on multiple values", () => {
+  expect(valuesAggregator('path', ['aaa', 'bbb', 'ccc'])).toEqual('aaa__bbb__ccc');
 });

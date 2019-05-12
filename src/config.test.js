@@ -19,6 +19,18 @@ test("validateConfig catches errors", () => {
   const actual = validateConfig(errorCfg);
   expect(actual.length).toEqual(5);
 });
+test("validateConfig passes clean config", () => {
+  const errorCfg = {
+    delimiter: ',',
+    batchSize: 42,
+    fields: [
+      {name: 'a', map: 'identity', agg: 'sum'},
+      {name: 'b', agg: 'sum'}
+    ]
+  }
+  const actual = validateConfig(errorCfg);
+  expect(actual.length).toEqual(0);
+});
 
 // fillOutConfig tests
 test("fillOutConfig adds all fields", () => {

@@ -2,7 +2,6 @@
   This module supports the 'report' command of the 'studiorpt' CLI program.
 
   TODO
-  - redo aggregation to support avg, unique, etc.
   - debug: batchSize > records returned causes ECONNRESET error
   - test and profile: messaging, make outgoing call,
     record voicemail, enqueue, capture payment
@@ -27,18 +26,17 @@ const error = require('../src/error');
 const {makeFilePath, transformExecutionData} = require('../src/calcs');
 const {log, openStream, writeRcdsToStream, writeToStream, closeStream}
 = require('../src/temputil');
-const {fillOutConfig} = require('../src/config');
+const {validateConfig, fillOutConfig} = require('../src/config');
 
 const calculateExecutionData = R.curry(
     async (client, flow, cfgWithFns, execAndContext) =>
 {
-  console.log('calculateExecutionData: getting steps');
+  //console.log('calculateExecutionData: getting steps');
   const steps = await helpers.getSteps(
     client, flow.sid, execAndContext.execution.sid
   );
-  console.log('calculateExecutionData: got steps');
+  //console.log('calculateExecutionData: got steps');
   const rptData = transformExecutionData(flow, cfgWithFns, execAndContext, steps);
-  console.log('calculated rptData');
   return rptData;
 });
 
@@ -75,18 +73,18 @@ module.exports = async (args) => {
       stepStream = openStream(dtlPath);
       writeToStream(stepStream, cfg.dtlHeader.join(cfg.delimiter)+'\n');
     }
-    console.log('getting page');
+    //console.log('getting page');
     const firstPage = await helpers.getExecutionsPage(
       client, flowSid, {dateCreatedFrom: fromDt, dateCreatedTo: toDt, pageSize: cfg.batchSize}
     );
-    console.log('got page');
+    //console.log('got page');
     let {nextPageUrl, execContexts} = firstPage;
     const firstPageData = await Promise.all(
       execContexts.map(calculateExecutionData(client, flow, cfg))
     )
     writeData(firstPageData, cfg, summStream, stepStream);
     while (nextPageUrl) {
-      console.log('getting another page');
+      //console.log('getting another page');
       let nextPage = await helpers.getExecutionsPage(client, flowSid, nextPageUrl);
       execContexts = nextPage.execContexts;
       let nextPageData = await Promise.all(
