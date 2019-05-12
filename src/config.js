@@ -13,6 +13,9 @@ const stdStepFlds = [
   'duration', 'elapsed', 'result'
 ];
 
+const validMapValues = ['identity'];
+const validAggValues = ['sum', 'count', 'unique', 'first', 'last', 'max', 'exists', 'path'];
+
 // testToPredicate :: [operator, operand] -> predicate
 const testToPredicate = (testPair) => {
   const [operator, operand] = testPair;
@@ -95,7 +98,36 @@ const makeSummHeader = (stdSummFlds, fields) => {
   return [...stdSummFlds, ...fields.map(R.prop('name'))];
 };
 
-const fillOutConfig = (stdSummFlds, stdStepFlds, rawCfg) => {
+// validateField :: (([errors], fld)) -> [errors]
+const validateField = (errors, fld) => {
+  const fldErrors = [];
+  let fldName;
+  if (fld.name)
+    fldName = fld.name;
+  else {
+    fldErrors.push(`field has no name`);
+    fldName = 'unknown';
+  }
+  if (fld.where && !Array.isArray(fld.where))
+    fldErrors.push(`in ${fldName} "where" must be an array of objects`);
+  if (fld.map && !validMapValues.includes(fld.map))
+    fldErrors.push(`in ${fldName} "map" must be one of: ${validMapValues}`);
+  if (fld.agg && !validAggValues.includes(fld.agg))
+    fldErrors.push(`in ${fldName} "agg" must be one of: ${validAggValues}`);
+  return [...errors, ...fldErrors];
+};
+
+const validateConfig = (cfg) => {
+  const {batchSize, delimiter, fields} = cfg;
+  const errors = [];
+  if (batchSize && isNaN(batchSize))
+    errors.push(`"batchSize" must be an integer`);
+  if (delimiter && ![',', '\t'].includes(delimiter))
+    errors.push(`"delimiter" must be a comma or tab character`);
+  return [...errors, ...fields.reduce(validateField, [])];
+};
+
+const fillOutConfig = (rawCfg) => {
   const {fields, batchSize, delimiter, ...rest} = rawCfg;
   const _batchSize = batchSize ? batchSize : 100;
   const _delimiter = delimiter ? delimiter : ',';
@@ -136,5 +168,6 @@ module.exports = {
   fillOutConfig,
   makeSummHeader,
   stdStepFlds,
-  stdSummFlds
+  stdSummFlds,
+  validateConfig
 }

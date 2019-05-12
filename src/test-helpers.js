@@ -22,10 +22,7 @@ const stdRawCfg = {
   ]
 };
 
-const stdSummFlds = ['a', 'b', 'c'];
-const stdStepFlds = ['d', 'e', 'f'];
-
-const stdCfg = fillOutConfig(stdSummFlds, stdStepFlds, stdRawCfg);
+const stdCfg = fillOutConfig(stdRawCfg);
 
 const sid = 'FNxxxx';
 
@@ -189,8 +186,6 @@ module.exports = {
   stdExecAndContext,
   stdFlow,
   stdRawCfg,
-  stdSummFlds,
-  stdStepFlds,
   stdSteps,
   stdStepTable
 };

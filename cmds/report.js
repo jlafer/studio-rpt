@@ -2,8 +2,6 @@
   This module supports the 'report' command of the 'studiorpt' CLI program.
 
   TODO
-  - add support for config defaults
-  - add config validation
   - redo aggregation to support avg, unique, etc.
   - debug: batchSize > records returned causes ECONNRESET error
   - test and profile: messaging, make outgoing call,
@@ -29,7 +27,7 @@ const error = require('../src/error');
 const {makeFilePath, transformExecutionData} = require('../src/calcs');
 const {log, openStream, writeRcdsToStream, writeToStream, closeStream}
 = require('../src/temputil');
-const {fillOutConfig, stdStepFlds, stdSummFlds} = require('../src/config');
+const {fillOutConfig} = require('../src/config');
 
 const calculateExecutionData = R.curry(
     async (client, flow, cfgWithFns, execAndContext) =>
@@ -57,13 +55,18 @@ const writeData = (execRpts, cfg, summStream, stepStream) => {
 
 module.exports = async (args) => {
   const {acct, auth, detail, flowSid, fromDt, toDt, cfgPath, outDir} = args;
+  const rawCfg = await readJsonFile(cfgPath);
+  const validationErrors = validateConfig(rawCfg);
+  if (validationErrors.length) {
+    console.log('ERROR: invalid configuration: ', validationErrors);
+    return;
+  }
+  const cfg = fillOutConfig(rawCfg);
   let dtlPath, stepStream, spinner;
   try {
     spinner = ora().start();
     const client = require('twilio')(acct, auth);
     const flow = await helpers.getWorkflow(client, flowSid);
-    const rawCfg = await readJsonFile(cfgPath);
-    const cfg = fillOutConfig(stdSummFlds, stdStepFlds, rawCfg);
     const summPath = makeFilePath(outDir, fromDt, toDt, 'summary', flow);
     const summStream = openStream(summPath);
     writeToStream(summStream, cfg.summHeader.join(cfg.delimiter)+'\n');
