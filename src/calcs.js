@@ -1,7 +1,8 @@
 const R = require('ramda');
 const {addStepNamespaceToVars, getFlowVars, qualifyFlowVars, qualifyTriggerVars}
 = require('./functions');
-const {pickNamesAndValues, isoDateToMsec, dtToIsoLocal} = require('./temputil');
+const {pickNamesAndValues, isoDateToMsec, dtToIsoLocal}
+= require('jlafer-fnal-util');
 const {addWhereFn} = require('./config');
 
 const keyStartsWithStep = (_v, k) => R.test(/^step./, k);
@@ -27,15 +28,6 @@ const dataToValueMapper = R.curry((map, defaultValue, value) => {
     return result;
   console.log(`${map} is an unsupported value map function!`);
   return result;
-});
-
-const joinIfNotNull = R.curry((separator, first, second) => {
-  if (first && second)
-    return `${first}${separator}${second}`;
-  else if (first)
-    return first;
-  else
-    return second;
 });
 
 const countUnique = (arr) => {

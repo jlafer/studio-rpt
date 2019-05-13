@@ -1,5 +1,5 @@
 const R = require('ramda');
-const {makeMapFirstOfPairFn, mapKeysOfObject} = require('./temputil');
+const {makeMapFirstOfPairFn, mapKeysOfObject} = require('jlafer-fnal-util');
 
 const addTriggerNamespace = R.concat('trigger.');
 const addTriggerNamespaceToFirst = makeMapFirstOfPairFn(addTriggerNamespace);

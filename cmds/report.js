@@ -9,8 +9,6 @@
   - add raw value to step report (based on widget class)
   - configure unique menu count once widget class support done
   - add support for digital flows
-  - move utility functions out
-  - create fnal util package
   - add support for other value mapping functions
 
   TEST CASES NEEDED
@@ -21,11 +19,11 @@
 const ora = require('ora');
 const R = require('ramda');
 const helpers = require('@jlafer/twilio-helpers');
-const {readJsonFile} = require('jlafer-node-util');
+const {readJsonFile, openStream, writeRcdsToStream, writeToStream, closeStream}
+= require('jlafer-node-util');
 const error = require('../src/error');
 const {makeFilePath, transformExecutionData} = require('../src/calcs');
-const {log, openStream, writeRcdsToStream, writeToStream, closeStream}
-= require('../src/temputil');
+const {log} = require('jlafer-fnal-util');
 const {validateConfig, fillOutConfig} = require('../src/config');
 
 const calculateExecutionData = R.curry(

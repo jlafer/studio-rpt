@@ -1,7 +1,7 @@
 const R = require('ramda');
 const {transformExecutionData, valuesAggregator} = require('./calcs');
 const {stdSteps, stdFlow, stdCfg, stdExecAndContext} = require('./test-helpers');
-const {isoDateToMsec, dtToIsoLocal} = require('./temputil');
+const {isoDateToMsec, dtToIsoLocal} = require('jlafer-fnal-util');
 
 // transformExecutionData tests
 test("transformExecutionData performs", () => {

@@ -1,7 +1,7 @@
 const R = require('ramda');
 const {addStepNamespace} = require('./functions');
 const {valueNotObject, valueIsObject, valueIsArray, isNotNil, isNotEquals}
-= require('../src/temputil');
+= require('jlafer-fnal-util');
 
 const stdSummFlds = [
   'sid', 'appName', 'appVersion', 'startTime', 'endTime', 'duration', 'lastStep', 'result',
