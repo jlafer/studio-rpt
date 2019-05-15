@@ -8,7 +8,6 @@
   - add inference of widget class for the above classes
   - add raw value to step report (based on widget class)
   - configure unique menu count once widget class support done
-  - add support for digital flows
   - add support for other value mapping functions
 
   TEST CASES NEEDED

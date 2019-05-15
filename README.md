@@ -1,6 +1,5 @@
 # studio-rpt
-
-This project contains a CLI program that reports on Twilio Studio flows.
+This project contains a CLI program that reports on Twilio Studio flow executions.
 
 ## Installation
 Clone this repo and then install dependencies.
@@ -49,11 +48,11 @@ File names take the following format:
 - execution detail reports: {workflow SID}\_{workflow version}\_detail\_{FROM_TS}\_{TO_TS}.csv
 
 ## Report Data
-Each summary execution report provides the following fields:
+The summary report provides the following fields for each execution:
 - sid - the execution SID
 - appName - the Studio flow name
 - appVersion - the Studio flow version
-- startTime - the starting timestamp of the execution, in ISO 8601 format using the timezone specified with --fromDt (or -F)
+- startTime - the starting timestamp of the execution, in ISO 8601 format using the local timezone
 - endTime - the ending timestamp of the execution, in ISO 8601 format
 - duration - the execution time, in mSec (currently rounded to one second)
 - lastStep - the name of the last widget executed
@@ -66,20 +65,21 @@ Each summary execution report provides the following fields:
 - endReason - the reason for ending the execution; this field must be populated in the Studio application, which can use the `Set Variable` widget to set the `endReason` variable; the suggested value is one of: `agent`, `self-service`, `timeout`, `no-match` or `error`
 - [custom execution fields]
 
-Each detail report provides the following fields:
+The detail report provides the following fields for each execution step:
 - sid - the execution SID
 - stepClass - the Studio widget class for this step
 - name - the Studio widget name for this step
 - idx - the index (or sequence) number of the step in the order of execution
 - transitionedTo - the name of the widget in the following step
-- startTime - the starting timestamp of the step, in ISO 8601 format (GMT)
-- endTime - the ending timestamp of the step, in ISO 8601 format (GMT)
+- startTime - the starting timestamp of the step, in ISO 8601 format
+- endTime - the ending timestamp of the step, in ISO 8601 format
 - duration - the time spent in the step, in mSec (currently rounded to one second)
 - elapsed - the elapsed time from the start of the flow execution through the end of this step, in mSec
 - result - the result reported by the Studio engine for this step
 - [custom step fields] (FUTURE)
 
 ## Known limitations
+- Only voice flows are currently supported by the `report` command.
 - There is no data on flow config (e.g., DTMF-allowed on menu, timeout values).
 - There is no selecting of steps by widget class - only by name(s) or other step variable.
 - There is no count of repeated menus due to a timeout.
@@ -168,3 +168,6 @@ Below is a list of the widget variables that are present with widgets of the var
 1.0.3
 - Added support for default field configuration properties.
 - BREAKING CHANGE - changed `field.default` to `field.dflt` in config file. 
+
+## Legal
+This software is distributed under the MIT license (see LICENSE.txt). All re-use of this software should clearly cite Twilio, Inc.
