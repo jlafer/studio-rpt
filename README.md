@@ -81,7 +81,6 @@ The detail report provides the following fields for each execution step:
 ## Known limitations
 - Only voice flows are currently supported by the `report` command.
 - There is no data on flow config (e.g., DTMF-allowed on menu, timeout values).
-- There is no selecting of steps by widget class - only by name(s) or other step variable.
 - There is no count of repeated menus due to a timeout.
 - The granularity of timing is 1 second.
 - There is no Task SID for tasks that are sent to be routed. This would make it easier to join the studiorpt data with that in Flex WFO.
@@ -127,16 +126,20 @@ AGGNAME :: first || last || sum || count || unique || max || exists || path
 Note: When multiple `where` clauses are specified their evaluation results are combined with an implied logical-or operation. When multiple conditions are included within a single `where` clause, their evaluation results are combined with an implied logical-and operation.
 
 ## Variable Data
-When specifying source data in the config file for the purpose of creating custom fields, widget and step variables are available for use in the `filters` clause and `select` properties.
+When specifying source data in the config file for the purpose of creating custom fields, "trigger", "step", "widget" and "flow" variables are available for use in the `where` and `select` properties.
 
-The step properties are listed above and are named like `step.name` or `step.idx`.
+The trigger properties are those added to the flow context during triggering of the flow and visible in the Studio log. These are prefixed to create names like `trigger.from` and `trigger.to`.
+
+The step properties are those listed in the description of the detail step records above and are prefixed to create names like `step.stepClass`, `step.name` and `step.idx`.
 
 The widget variables have no prefix and are listed below, under the heading of the Studio widget types for which they are populated.
 
-In addition there are a large number of flow variables that can be used, including the network property variables provided by Studio in the `Trigger` widget. These are also available as widget variables for some other widget types, including `Say/Play`. The `studiorpt list --type step` command can be useful for reviewing the variables that are available at each step of an execution.
+The flow variables are prefixed with `flow.` and represent variables set with the `Set Variables` widget. Your Flow may change their value during the course of an execution; if you need the variable value at a certain point in the execution, use the `where` clause to specify the widget or execution step and select the value at that point.
+
+The `studiorpt list --type step` command can be useful for reviewing the variables that are available at each step of an execution. You can also examine the Studio log for particular executions to see the data that are available.
 
 ## Widget-specific Variable Data
-Below is a list of the widget variables that are present with widgets of the various types. [NOTE: this list is not comprehensive!]
+Below is a list of the widget variables that are present with widgets of the various types. [NOTE: this list is not yet comprehensive!]
 
 ### Gather Input on Call
 - msg - will contain one of: "Gather End"
@@ -168,6 +171,10 @@ Below is a list of the widget variables that are present with widgets of the var
 1.0.3
 - Added support for default field configuration properties.
 - BREAKING CHANGE - changed `field.default` to `field.dflt` in config file. 
+
+1.0.4
+- Added validation of configuration properties.
+- Added the `unique` aggregation type, which produces a unique count of values returned by the `select` and `map` steps.
 
 ## Legal
 This software is distributed under the MIT license (see LICENSE.txt). All re-use of this software should clearly cite Twilio, Inc.

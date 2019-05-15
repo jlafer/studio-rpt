@@ -21,7 +21,7 @@
     {
       "name":"timeInMenu",
       "where":[
-        {"step.name":"menuMain"}
+        {"step.stepClass":"GatherInput"}
       ],
       "select":"step.duration",
       "map":"identity",
@@ -31,7 +31,7 @@
     {
       "name":"timeInSayPlay",
       "where":[
-        {"step.name":["sayWelcome","say_play_1"]}
+        {"step.stepClass":["SayOrPlay"]}
       ],
       "select":"step.duration",
       "map":"identity",
@@ -48,9 +48,9 @@
     {
       "name":"functionCallCnt",
       "where":[
-        {"status_code":{"not":"null"}}
+        {"step.stepClass":["HttpCall"]}
       ],
-      "select":"step.duration",
+      "select":1,
       "map":"identity",
       "agg":"count",
       "dflt":0
@@ -66,5 +66,5 @@
       "dflt":0
     }
   ],
-  "batchSize":100
+  "batchSize":5
 }
