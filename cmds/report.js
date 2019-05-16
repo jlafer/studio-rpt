@@ -2,6 +2,7 @@
   This module supports the 'report' command of the 'studiorpt' CLI program.
 
   TODO
+  - document configuration default values
   - debug: batchSize > records returned causes ECONNRESET error
   - test and profile: messaging, make outgoing call,
     record voicemail, enqueue, capture payment
@@ -50,6 +51,8 @@ const writeData = (execRpts, cfg, summStream, stepStream) => {
 
 module.exports = async (args) => {
   const {acct, auth, detail, flowSid, fromDt, toDt, cfgPath, outDir} = args;
+  const fromDtPath = fromDt.replace(/:/gi, '_');
+  const toDtPath = toDt.replace(/:/gi, '_');
   const rawCfg = await readJsonFile(cfgPath);
   const validationErrors = validateConfig(rawCfg);
   if (validationErrors.length) {
@@ -62,11 +65,11 @@ module.exports = async (args) => {
     spinner = ora().start();
     const client = require('twilio')(acct, auth);
     const flow = await helpers.getWorkflow(client, flowSid);
-    const summPath = makeFilePath(outDir, fromDt, toDt, 'summary', flow);
+    const summPath = makeFilePath(outDir, fromDtPath, toDtPath, 'summary', flow);
     const summStream = openStream(summPath);
     writeToStream(summStream, cfg.summHeader.join(cfg.delimiter)+'\n');
     if (detail) {
-      dtlPath = makeFilePath(outDir, fromDt, toDt, 'detail', flow);
+      dtlPath = makeFilePath(outDir, fromDtPath, toDtPath, 'detail', flow);
       stepStream = openStream(dtlPath);
       writeToStream(stepStream, cfg.dtlHeader.join(cfg.delimiter)+'\n');
     }

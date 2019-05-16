@@ -18,17 +18,11 @@ const dataGetter = R.curry((dataSpec, row) => {
     return R.path(dataSpec, row);
   if (typeof dataSpec === 'number')
     return dataSpec;
-  console.log(`${dataSpec} is an unsupported data spec!`);
+  console.log(`${dataSpec} is an unsupported "select" clause!`);
   return 0;
 });
 
-const dataToValueMapper = R.curry((map, defaultValue, value) => {
-  const result = value || defaultValue;
-  if (map === 'identity')
-    return result;
-  console.log(`${map} is an unsupported value map function!`);
-  return result;
-});
+const dataToValueMapper = R.curry((map, value) => map(value));
 
 const countUnique = (arr) => {
   const set = new Set(arr);
@@ -56,7 +50,7 @@ const calculateValue = R.curry((stepTable, field) => {
   //console.log('calculateValue: for field:', field);
   const values = rows.filter(rowFilter(field))
     .map(dataGetter(field.select))
-    .map(dataToValueMapper(field.map, field.dlft));
+    .map(dataToValueMapper(field.map));
   const value = valuesAggregator(field.agg, values);
   return {...field, value: (value || field.dlft)};
 });
@@ -154,11 +148,11 @@ const makeFilePath = (outDir, fromDt, toDt, type, flow) => {
 
 const wasRouted = (stepTable) => {
   const metricFld = {
-    "where":[{"step.stepClass":"SendToFlex"}],
-    "select":1,
-    "map":"identity",
-    "agg":"exists",
-    "dlft":false
+    where: [{'step.stepClass':'SendToFlex'}],
+    select: 1,
+    map: R.identity,
+    agg: 'exists',
+    dlft: false
   };
   const fldWithFunction = addWhereFn(metricFld);
   const fldWithValue = calculateValue(stepTable, fldWithFunction);
@@ -167,11 +161,11 @@ const wasRouted = (stepTable) => {
 
 const wasReleasedByUser = (stepTable) => {
   const metricFld = {
-    "where":[{"step.stepClass":"SayOrPlay", "CallStatus": 'completed'}],
-    "select":1,
-    "map":"identity",
-    "agg":"exists",
-    "dlft":false
+    where: [{'step.stepClass':'SayOrPlay', 'CallStatus': 'completed'}],
+    select: 1,
+    map: R.identity,
+    agg: 'exists',
+    dlft: false
   };
   const fldWithFunction = addWhereFn(metricFld);
   const fldWithValue = calculateValue(stepTable, fldWithFunction);

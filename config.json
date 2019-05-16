@@ -2,29 +2,11 @@
   "delimiter":",",
   "fields":[
     {
-      "name":"centerStatus",
-      "where":[
-        {"step.name":"getCenterState"}
-      ],
-      "select":"body",
-      "map":"identity",
-      "agg":"last",
-      "dflt":"open"
-    },
-    {
-      "name":"language",
-      "select":"flow.language",
-      "map":"identity",
-      "agg":"last",
-      "dflt":"English"
-    },
-    {
       "name":"timeInMenu",
       "where":[
         {"step.stepClass":"GatherInput"}
       ],
       "select":"step.duration",
-      "map":"identity",
       "agg":"sum",
       "dflt":0
     },
@@ -34,14 +16,12 @@
         {"step.stepClass":["SayOrPlay"]}
       ],
       "select":"step.duration",
-      "map":"identity",
       "agg":"sum",
       "dflt":0
     },
     {
       "name":"maxTimeInStep",
       "select":"step.duration",
-      "map":"identity",
       "agg":"max",
       "dflt":0
     },
@@ -51,7 +31,6 @@
         {"step.stepClass":["HttpCall"]}
       ],
       "select":1,
-      "map":"identity",
       "agg":"count",
       "dflt":0
     },
@@ -61,7 +40,6 @@
         {"QueueResult":"hangup"}
       ],
       "select":"step.idx",
-      "map":"identity",
       "agg":"count",
       "dflt":0
     }

@@ -117,13 +117,21 @@ OPERATOR :: not || gt || lt
 OPERAND :: null || VALUE
 NAME :: <widget name>
 SELECTION :: VARNAME || VALUE
-VARNAME :: <var name> || step.<var name> || flow.<var name>
+VARNAME :: <var> || step.<var> || flow.<var> || trigger.<var>
 VALUE :: string || integer
-FNAME :: identity
+FNAME :: identity || <custom mapFunction>
 AGGNAME :: first || last || sum || count || unique || max || exists || path
 ```
 
-Note: When multiple `where` clauses are specified their evaluation results are combined with an implied logical-or operation. When multiple conditions are included within a single `where` clause, their evaluation results are combined with an implied logical-and operation.
+Configuration Notes
+- A `where` clause can select zero or more steps from an execution. It is these steps from which the `select` clause will obtain the value of an execution variable.
+- When multiple conditions are included within a single `where` clause, their evaluation results are combined with an implied logical-and operation.
+- When multiple `where` clauses are specified their evaluation results are combined with an implied logical-or operation.
+- The `select` clause specifies the execution variable from which raw data will be drawn to populate the custom field.
+- The `map` clause can provide a mapping function to be applied to the raw value(s) obtained by the `select` clause. The `identity` function is the default.
+- The `agg` clause can aggregate the mapped values to a final value.
+- The `dflt` clause can specify a default value when the result of aggregation is null or undefined.
+- If a widget variable must be mapped to another format, this can be done by adding a mapping function property to the object in `src/mapFunctions.js`. The key of this property can then be used in the `map` clause of custom fields.
 
 ## Variable Data
 When specifying source data in the config file for the purpose of creating custom fields, "trigger", "step", "widget" and "flow" variables are available for use in the `where` and `select` properties.
@@ -139,7 +147,7 @@ The flow variables are prefixed with `flow.` and represent variables set with th
 The `studiorpt list --type step` command can be useful for reviewing the variables that are available at each step of an execution. You can also examine the Studio log for particular executions to see the data that are available.
 
 ## Widget-specific Variable Data
-Below is a list of the widget variables that are present with widgets of the various types. [NOTE: this list is not yet comprehensive!]
+Below is a list of the widget variables that are present with widgets of the various classes. [NOTE: this list is not yet comprehensive!]
 
 ### Gather Input on Call
 - msg - will contain one of: "Gather End"
@@ -175,6 +183,11 @@ Below is a list of the widget variables that are present with widgets of the var
 1.0.4
 - Added validation of configuration properties.
 - Added the `unique` aggregation type, which produces a unique count of values returned by the `select` and `map` steps.
+
+1.0.5
+- Added documentation on custom field configuration clauses.
+- Fixed a bug in which the default value for custom fields was used both before and after aggregation.
+- Added support for custom value-mapping functions.
 
 ## Legal
 This software is distributed under the MIT license (see LICENSE.txt). All re-use of this software should clearly cite Twilio, Inc.

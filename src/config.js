@@ -2,6 +2,7 @@ const R = require('ramda');
 const {addStepNamespace} = require('./functions');
 const {valueNotObject, valueIsObject, valueIsArray, isNotNil, isNotEquals}
 = require('jlafer-fnal-util');
+const mapFunctions = require('./mapFunctions');
 
 const stdSummFlds = [
   'sid', 'appName', 'appVersion', 'startTime', 'endTime', 'duration', 'lastStep', 'result',
@@ -94,6 +95,11 @@ const addWhereFn = (field) => {
   return {...field, fieldWhereFn}
 };
 
+const setMapFn = (field) => {
+  const mapFn = mapFunctions[field.map];
+  return {...field, map: mapFn};
+};
+
 const makeSummHeader = (stdSummFlds, fields) => {
   return [...stdSummFlds, ...fields.map(R.prop('name'))];
 };
@@ -131,7 +137,10 @@ const fillOutConfig = (rawCfg) => {
   const {fields, batchSize, delimiter, ...rest} = rawCfg;
   const _batchSize = batchSize ? batchSize : 100;
   const _delimiter = delimiter ? delimiter : ',';
-  const fieldsWithFns = fields.map(addFieldDefaults).map(addWhereFn);
+  const fieldsWithFns = fields
+  .map(addFieldDefaults)
+  .map(addWhereFn)
+  .map(setMapFn);
   const summHeader = makeSummHeader(stdSummFlds, fieldsWithFns);
   const dtlHeader = [...stdStepFlds];
   const dtlHeaderQualified = dtlHeader.map(addStepNamespace);
@@ -167,6 +176,7 @@ module.exports = {
   addWhereFn,
   fillOutConfig,
   makeSummHeader,
+  setMapFn,
   stdStepFlds,
   stdSummFlds,
   validateConfig

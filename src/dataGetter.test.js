@@ -26,19 +26,3 @@ test("dataGetter returns 1 when a 1 is selected", () => {
 test("dataGetter returns constant value when a number is selected", () => {
   expect(dataGetter(42, row)).toEqual(42);
 });
-// 'dataToValueMapper' tests
-test("dataToValueMapper returns value when supplied", () => {
-  expect(dataToValueMapper('identity', 'default', 'value')).toEqual('value');
-});
-test("dataToValueMapper returns default value when value NOT supplied", () => {
-  expect(dataToValueMapper('identity', 'default', null)).toEqual('default');
-});
-test("dataToValueMapper returns value when default value NOT supplied", () => {
-  expect(dataToValueMapper('identity', null, 'value')).toEqual('value');
-});
-test("dataToValueMapper returns null when both value and default value NOT supplied", () => {
-  expect(dataToValueMapper('identity', null, null)).toEqual(null);
-});
-test("dataToValueMapper returns undefined when both value and default value are undefined", () => {
-  expect(dataToValueMapper('identity', undefined, undefined)).toEqual(undefined);
-});
