@@ -1,6 +1,6 @@
 {
   "name": "studio-rpt",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A CLI program that reports on Twilio Studio flows",
   "main": "index.js",
   "engines": {
@@ -21,7 +21,6 @@
     "jest": "^24.7.1",
     "jlafer-fnal-util": "^1.0.2",
     "jlafer-node-util": "^1.0.3",
-    "moment": "^2.24.0",
     "ora": "^3.4.0",
     "ramda": "^0.26.1",
     "twilio": "^3.30.1"
